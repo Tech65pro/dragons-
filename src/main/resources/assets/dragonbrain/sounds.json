@@ -1,0 +1,92 @@
+{
+  "dragon_roar": {
+    "subtitle": "subtitles.dragonbrain.dragon_roar",
+    "sounds": [
+      { "name": "dragonbrain:dragon_roar", "volume": 0.9, "attenuation_distance": 64 }
+    ]
+  },
+  "dive_warning": {
+    "subtitle": "subtitles.dragonbrain.dive_warning",
+    "sounds": [
+      { "name": "dragonbrain:dive_warning", "volume": 0.85, "attenuation_distance": 96 }
+    ]
+  },
+  "fireball_charge": {
+    "subtitle": "subtitles.dragonbrain.fireball_charge",
+    "sounds": [
+      { "name": "dragonbrain:fireball_charge", "volume": 0.55, "attenuation_distance": 48 }
+    ]
+  },
+  "fireball_launch": {
+    "subtitle": "subtitles.dragonbrain.fireball_launch",
+    "sounds": [
+      { "name": "dragonbrain:fireball_launch", "volume": 0.7, "attenuation_distance": 48 }
+    ]
+  },
+  "wing_gust": {
+    "subtitle": "subtitles.dragonbrain.wing_gust",
+    "sounds": [
+      { "name": "dragonbrain:wing_gust", "volume": 0.75, "attenuation_distance": 64 }
+    ]
+  },
+  "void_pulse": {
+    "subtitle": "subtitles.dragonbrain.void_pulse",
+    "sounds": [
+      { "name": "dragonbrain:void_pulse", "volume": 0.8, "attenuation_distance": 80 }
+    ]
+  },
+  "crystal_overcharge": {
+    "subtitle": "subtitles.dragonbrain.crystal_overcharge",
+    "sounds": [
+      { "name": "dragonbrain:crystal_overcharge", "volume": 0.45, "attenuation_distance": 64 }
+    ]
+  },
+  "phase_transition": {
+    "subtitle": "subtitles.dragonbrain.phase_transition",
+    "sounds": [
+      { "name": "dragonbrain:phase_transition", "volume": 0.9, "attenuation_distance": 128 }
+    ]
+  },
+  "rage": {
+    "subtitle": "subtitles.dragonbrain.rage",
+    "sounds": [
+      { "name": "dragonbrain:rage", "volume": 0.95, "attenuation_distance": 128 }
+    ]
+  },
+  "victory": {
+    "subtitle": "subtitles.dragonbrain.victory",
+    "sounds": [
+      { "name": "dragonbrain:victory", "volume": 0.9, "attenuation_distance": 128 }
+    ]
+  },
+  "defeat": {
+    "subtitle": "subtitles.dragonbrain.defeat",
+    "sounds": [
+      { "name": "dragonbrain:defeat", "volume": 0.8, "attenuation_distance": 128 }
+    ]
+  },
+  "stagger": {
+    "subtitle": "subtitles.dragonbrain.stagger",
+    "sounds": [
+      { "name": "dragonbrain:stagger", "volume": 0.7, "attenuation_distance": 48 }
+    ]
+  },
+  "end_ambience": {
+    "subtitle": "subtitles.dragonbrain.end_ambience",
+    "sounds": [
+      { "name": "dragonbrain:end_ambience", "volume": 0.35, "stream": false }
+    ]
+  },
+  "music_boss": {
+    "subtitle": "subtitles.dragonbrain.music_boss",
+    "sounds": [
+      { "name": "dragonbrain:music_boss", "volume": 0.55, "stream": true }
+    ]
+  },
+  "music_final": {
+    "subtitle": "subtitles.dragonbrain.music_final",
+    "sounds": [
+      { "name": "dragonbrain:music_final", "volume": 0.6, "stream": true }
+    ]
+  }
+}

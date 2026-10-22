@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.dragonbrain.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "EnderDragonRendererAccessor",
+    "EnderDragonRendererMixin",
+    "EnderDragonRenderStateMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

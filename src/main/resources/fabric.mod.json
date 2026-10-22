@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "dragonbrain",
+  "version": "${version}",
+  "name": "DragonBrain",
+  "description": "An intelligent, fair and cinematic Ender Dragon overhaul: state machine driven attacks, real telegraphs, four difficulty modes, new boss mechanics, an original dragon texture and original sound design. Server-authoritative and fully configurable.",
+  "authors": [
+    "DragonBrain"
+  ],
+  "contact": {
+    "homepage": "https://example.invalid/dragonbrain",
+    "sources": "https://example.invalid/dragonbrain"
+  },
+  "license": "MIT",
+  "icon": "assets/dragonbrain/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.dragonbrain.DragonBrain"
+    ],
+    "client": [
+      "com.dragonbrain.client.DragonBrainClient"
+    ]
+  },
+  "mixins": [
+    "dragonbrain.mixins.json",
+    {
+      "config": "dragonbrain.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "fabric-api": ">=0.141.0",
+    "minecraft": "1.21.11",
+    "java": ">=21"
+  }
+}
