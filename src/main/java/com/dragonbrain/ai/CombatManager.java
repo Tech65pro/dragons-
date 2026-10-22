@@ -240,6 +240,22 @@ public final class CombatManager {
          case "voidpulse":
             controller.forceAttack(AttackType.VOID_PULSE);
             break;
+         case "rift":
+         case "voidrift":
+            controller.forceAttack(AttackType.VOID_RIFT);
+            break;
+         case "meteors":
+         case "meteorstorm":
+            controller.forceAttack(AttackType.METEOR_STORM);
+            break;
+         case "roar":
+         case "dreadroar":
+            controller.forceAttack(AttackType.DREAD_ROAR);
+            break;
+         case "well":
+         case "gravitywell":
+            controller.forceAttack(AttackType.GRAVITY_WELL);
+            break;
          case "stagger":
             controller.onDragonDamaged(world, 999.0F);
             break;

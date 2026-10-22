@@ -59,7 +59,9 @@ public final class DragonBrainCommands {
                   return builder.buildFuture();
                }).executes(DragonBrainCommands::setDifficulty))))
             .then(CommandManager.literal("test").then(CommandManager.argument("mechanic", StringArgumentType.word()).suggests((context, builder) -> {
-               for (String name : new String[]{"dive", "fireball", "gust", "pulse", "stagger", "rage", "final", "victory", "reset"}) {
+               for (String name : new String[]{
+                  "dive", "fireball", "gust", "pulse", "rift", "meteors", "roar", "well", "stagger", "rage", "final", "cataclysm", "victory", "reset"
+               }) {
                   builder.suggest(name);
                }
 
@@ -99,16 +101,21 @@ public final class DragonBrainCommands {
          () -> Text.literal(
             String.format(
                Locale.ROOT,
-               "mechanics: dive=%s gust=%s pulse=%s overcharge=%s stagger=%s rage=%s fakeout=%s final=%s victory=%s",
+               "mechanics: dive=%s gust=%s pulse=%s rift=%s meteors=%s roar=%s well=%s | overcharge=%s stagger=%s rage=%s fakeout=%s final=%s cataclysm=%s victory=%s",
                new Object[]{
                   onOff(config.mechanicDive),
                   onOff(config.mechanicWingGust),
                   onOff(config.mechanicVoidPulse),
+                  onOff(config.mechanicVoidRift),
+                  onOff(config.mechanicMeteorStorm),
+                  onOff(config.mechanicDreadRoar),
+                  onOff(config.mechanicGravityWell),
                   onOff(config.mechanicCrystalOvercharge),
                   onOff(config.mechanicStaggerWindow),
                   onOff(config.mechanicRagePhase),
                   onOff(config.mechanicFakeout),
                   onOff(config.mechanicFinalPhase),
+                  onOff(config.mechanicCataclysmPhase),
                   onOff(config.mechanicVictorySequence)
                }
             )
@@ -211,7 +218,7 @@ public final class DragonBrainCommands {
             Text.literal(
                "Could not trigger '"
                   + mechanic
-                  + "'. Valid: dive, fireball, gust, pulse, stagger, rage, final, victory, reset. A dragon must be loaded within 256 blocks."
+                  + "'. Valid: dive, fireball, gust, pulse, rift, meteors, roar, well, stagger, rage, final, cataclysm, victory, reset. A dragon must be loaded within 256 blocks."
             )
          );
          return 0;
@@ -233,7 +240,7 @@ public final class DragonBrainCommands {
          "/dragonbrain reload — re-read config/dragonbrain.json",
          "/dragonbrain debug — toggle debug logging",
          "/dragonbrain ai <on|off> — enable/disable the overhaul (vanilla dragon returns)",
-         "/dragonbrain test <dive|fireball|gust|pulse|stagger|rage|final|victory|reset>"
+         "/dragonbrain test <dive|fireball|gust|pulse|rift|meteors|roar|well|stagger|rage|final|cataclysm|victory|reset>"
       };
 
       for (String line : lines) {

@@ -88,6 +88,7 @@ public final class AttackScheduler {
                } else {
                   this.current = choice;
                   this.fakeoutUsed = false;
+                  this.comboUsed = false;
                   this.stats.attacksLaunched++;
                   this.ticksSinceAnyAttack = 0;
                   if (needsApproach(choice, distance)) {
@@ -107,7 +108,10 @@ public final class AttackScheduler {
                   this.current = fakeout;
                   this.fakeoutUsed = true;
                   this.stats.fakeouts++;
-                  int shorter = Math.max(tuning.minTelegraphTicks(), Math.round(tuning.telegraphTicks(fakeout) * 0.8F));
+                  int shorter = Math.max(
+                     Math.max(tuning.minTelegraphTicks(), fakeout.minTelegraphTicks()),
+                     Math.round(tuning.telegraphTicks(fakeout) * 0.8F)
+                  );
                   this.enter(CombatState.TELEGRAPH, fakeout, shorter);
                   return new AttackScheduler.Result(AttackScheduler.Action.START_TELEGRAPH, this.state, fakeout, true);
                }
@@ -124,6 +128,21 @@ public final class AttackScheduler {
          case ATTACK:
             if (this.ticksInState >= this.plannedStateTicks) {
                AttackType finished = this.current;
+               AttackType combo = this.tryCombo(tuning, available);
+               if (combo != null) {
+                  this.current = combo;
+                  this.comboUsed = true;
+                  this.stats.attacksLaunched++;
+                  this.stats.combos++;
+                  this.ticksSinceAnyAttack = 0;
+                  int comboTelegraph = Math.max(
+                     Math.max(tuning.minTelegraphTicks(), combo.minTelegraphTicks()),
+                     Math.round(tuning.telegraphTicks(combo) * 0.85F)
+                  );
+                  this.enter(CombatState.TELEGRAPH, combo, comboTelegraph);
+                  return new AttackScheduler.Result(AttackScheduler.Action.START_TELEGRAPH, this.state, combo, false);
+               }
+
                int recovery = finished == null ? 20 : tuning.recoveryTicks(finished);
                this.enter(CombatState.RECOVERY, finished, recovery);
                return new AttackScheduler.Result(AttackScheduler.Action.ENTER_RECOVERY, this.state, finished, false);
@@ -231,8 +250,19 @@ public final class AttackScheduler {
          case DIVE -> distance > 8.0 && distance < 48.0 ? 1.0F : 0.15F;
          case WING_GUST -> distance < 18.0 ? 1.1F : 0.0F;
          case VOID_PULSE -> distance < 30.0 ? 0.85F : 0.05F;
+         // DragonBrain 3.0 abilities: ground-targeted tools want a mid-range
+         // target, the roar is a point-blank answer, meteors punish campers.
+         case DREAD_ROAR -> distance < 20.0 ? 1.05F : (distance < 28.0 ? 0.3F : 0.0F);
+         case VOID_RIFT -> distance > 6.0 && distance < 48.0 ? 0.9F : 0.1F;
+         case METEOR_STORM -> distance < 56.0 ? 0.8F : 0.15F;
+         case GRAVITY_WELL -> distance > 6.0 && distance < 44.0 ? 0.85F : 0.1F;
          case REPOSITION, HOVER -> 0.0F;
       };
+      if (this.phase == BossPhase.CATACLYSM
+         && (type == AttackType.VOID_RIFT || type == AttackType.METEOR_STORM || type == AttackType.GRAVITY_WELL || type == AttackType.DREAD_ROAR)) {
+         // The Cataclysm leans on its signature arsenal.
+         weight *= 1.35F;
+      }
       if (type == this.lastAttack) {
          weight *= 0.3F;
       }
@@ -241,7 +271,13 @@ public final class AttackScheduler {
    }
 
    private static boolean needsApproach(AttackType type, double distance) {
-      return distance > 26.0 && (type == AttackType.WING_GUST || type == AttackType.VOID_PULSE || type == AttackType.DIVE);
+      return distance > 26.0
+         && (type == AttackType.WING_GUST
+            || type == AttackType.VOID_PULSE
+            || type == AttackType.DIVE
+            || type == AttackType.DREAD_ROAR
+            || type == AttackType.VOID_RIFT
+            || type == AttackType.GRAVITY_WELL);
    }
 
    private AttackType tryFakeout(DifficultyTuning tuning, Collection<AttackType> available) {
@@ -268,6 +304,46 @@ public final class AttackScheduler {
       } else {
          return null;
       }
+   }
+
+   /**
+    * DragonBrain 3.0 bounded combos. At most one chain per attack sequence, the
+    * chained attack must differ from the finished one, be unlocked in the
+    * current phase, be present in {@code available} (i.e. enabled in config),
+    * have its own cooldown ready, and satisfy the same minimum-damage-interval
+    * lock as a normally chosen attack. The chained attack still runs through a
+    * full (slightly shortened, floor-clamped) telegraph, so a combo can never
+    * deal damage without a warning.
+    */
+   private AttackType tryCombo(DifficultyTuning tuning, Collection<AttackType> available) {
+      if (!tuning.allowCombo() || this.comboUsed || this.current == null || !this.current.isDamaging()) {
+         return null;
+      }
+      if (this.ticksSinceDamagingAttack < tuning.minDamageIntervalTicks()) {
+         return null;
+      }
+      if (this.random.nextFloat() >= 0.65F) {
+         return null;
+      }
+
+      AttackType best = null;
+      for (AttackType type : available) {
+         if (type != this.current
+            && type.isDamaging()
+            && type.isUnlockedIn(this.phase)
+            && (Integer)this.cooldowns.getOrDefault(type, 0) <= 0
+            && (best == null || this.random.nextBoolean())) {
+            best = type;
+         }
+      }
+
+      if (best == null) {
+         return null;
+      }
+
+      this.cooldowns.put(best, tuning.cooldownTicks(best));
+      this.lastAttack = best;
+      return best;
    }
 
    public void onDamageDealt(float weight) {
@@ -366,6 +442,15 @@ public final class AttackScheduler {
       return this.stats;
    }
 
+   /** Remaining cooldown of one attack in ticks (0 = ready). Used by status/debug commands. */
+   public int getCooldownTicks(AttackType type) {
+      return (Integer)this.cooldowns.getOrDefault(type, 0);
+   }
+
+   public boolean isComboUsed() {
+      return this.comboUsed;
+   }
+
    public void reset() {
       this.state = CombatState.IDLE;
       this.current = null;
@@ -378,6 +463,7 @@ public final class AttackScheduler {
       this.consecutiveHits = 0;
       this.lastAttack = null;
       this.fakeoutUsed = false;
+      this.comboUsed = false;
       this.phaseTransitionPending = false;
       this.queuedAttack = null;
       this.cooldowns.replaceAll((k, v) -> 0);

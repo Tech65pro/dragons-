@@ -13,6 +13,8 @@ public final class DragonTextures {
    public static final Identifier CUSTOM_EYES = id("dragon_eyes.png");
    public static final Identifier FINAL_BODY = id("dragon_final.png");
    public static final Identifier FINAL_EYES = id("dragon_final_eyes.png");
+   public static final Identifier CATACLYSM_BODY = id("dragon_cataclysm.png");
+   public static final Identifier CATACLYSM_EYES = id("dragon_cataclysm_eyes.png");
    private static final ThreadLocal<EnderDragonEntityRenderState> CURRENT = new ThreadLocal();
    private static RenderLayer customBodyLayer;
    private static RenderLayer customDecalLayer;
@@ -20,6 +22,9 @@ public final class DragonTextures {
    private static RenderLayer finalBodyLayer;
    private static RenderLayer finalDecalLayer;
    private static RenderLayer finalEyesLayer;
+   private static RenderLayer cataclysmBodyLayer;
+   private static RenderLayer cataclysmDecalLayer;
+   private static RenderLayer cataclysmEyesLayer;
 
    private DragonTextures() {
    }
@@ -55,7 +60,13 @@ public final class DragonTextures {
          return EnderDragonRendererAccessor.dragonbrain$vanillaCutout();
       }
 
-      if (useFinal()) {
+      if (useCataclysm()) {
+         if (cataclysmBodyLayer == null) {
+            cataclysmBodyLayer = RenderLayers.entityCutoutNoCull(CATACLYSM_BODY);
+         }
+
+         return cataclysmBodyLayer;
+      } else if (useFinal()) {
          if (finalBodyLayer == null) {
             finalBodyLayer = RenderLayers.entityCutoutNoCull(FINAL_BODY);
          }
@@ -75,7 +86,13 @@ public final class DragonTextures {
          return EnderDragonRendererAccessor.dragonbrain$vanillaDecal();
       }
 
-      if (useFinal()) {
+      if (useCataclysm()) {
+         if (cataclysmDecalLayer == null) {
+            cataclysmDecalLayer = RenderLayers.entityDecal(CATACLYSM_BODY);
+         }
+
+         return cataclysmDecalLayer;
+      } else if (useFinal()) {
          if (finalDecalLayer == null) {
             finalDecalLayer = RenderLayers.entityDecal(FINAL_BODY);
          }
@@ -96,7 +113,13 @@ public final class DragonTextures {
          return EnderDragonRendererAccessor.dragonbrain$vanillaEyes();
       }
 
-      if (useFinal()) {
+      if (useCataclysm()) {
+         if (cataclysmEyesLayer == null) {
+            cataclysmEyesLayer = RenderLayers.eyes(CATACLYSM_EYES);
+         }
+
+         return cataclysmEyesLayer;
+      } else if (useFinal()) {
          if (finalEyesLayer == null) {
             finalEyesLayer = RenderLayers.eyes(FINAL_EYES);
          }

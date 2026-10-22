@@ -1,5 +1,8 @@
 package com.dragonbrain.core;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 public final class TuningFactory {
    public static final int MIN_TELEGRAPH_FLOOR = 8;
    private static final TuningFactory.Knobs ROOKIE = new TuningFactory.Knobs(
@@ -145,6 +148,11 @@ public final class TuningFactory {
       int reactionDelayTicks();
 
       boolean mechanicComboChains();
+
+      /** DragonBrain 3.0: per-ability cooldown multiplier (1.0 = untouched). */
+      default float abilityCooldownMultiplier(AttackType type) {
+         return 1.0F;
+      }
    }
 
    private static final class DifficultyTuningDefaults {

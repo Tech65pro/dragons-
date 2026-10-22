@@ -46,6 +46,35 @@ public final class DragonBrainConfig implements TuningFactory.ConfigView {
    public float voidPulseDamage = 6.0F;
    public float rageHealthThreshold = 0.5F;
    public float finalPhaseHealthThreshold = 0.25F;
+   // --- DragonBrain 3.0: Cataclysm phase and the four new abilities ---
+   public boolean mechanicVoidRift = true;
+   public boolean mechanicMeteorStorm = true;
+   public boolean mechanicDreadRoar = true;
+   public boolean mechanicGravityWell = true;
+   public boolean mechanicCataclysmPhase = true;
+   /** Health ratio that starts the Cataclysm phase (below the Final threshold). */
+   public float cataclysmHealthThreshold = 0.1F;
+   public float voidRiftDamage = 7.0F;
+   public float voidRiftCooldownMultiplier = 1.0F;
+   public float meteorDamage = 8.0F;
+   /** Base meteor count per storm on NORMAL (scaled by difficulty, hard-capped). */
+   public int meteorCount = 7;
+   public float meteorRadius = 3.0F;
+   public float meteorCooldownMultiplier = 1.0F;
+   public float dreadRoarDamage = 4.0F;
+   public float dreadRoarRadius = 18.0F;
+   public float dreadRoarCooldownMultiplier = 1.0F;
+   public float gravityWellDamage = 5.0F;
+   public float gravityWellRadius = 12.0F;
+   /** Inward pull acceleration per tick. Deliberately weak: players can always walk out. */
+   public float gravityWellPullStrength = 0.1F;
+   public float gravityWellCooldownMultiplier = 1.0F;
+   /** Cataclysm phase particle aura + attack trails (client-visible, server-spawned). */
+   public boolean cataclysmAura = true;
+   /** Separate boss track during the Cataclysm phase (falls back to the Final track). */
+   public boolean cataclysmMusic = true;
+   /** Scales the bounded particle budgets of the 3.0 visual effects. */
+   public float particleDensityMultiplier = 1.0F;
    public boolean adaptiveDifficulty = true;
    public boolean customTexture = true;
    public boolean emissiveEyes = true;
@@ -92,7 +121,7 @@ public final class DragonBrainConfig implements TuningFactory.ConfigView {
 
    public List<String> validate() {
       List<String> fixes = new ArrayList();
-      this.schemaVersion = 2;
+      this.schemaVersion = 3;
       DifficultyMode mode = DifficultyMode.parse(this.difficulty, DifficultyMode.NORMAL);
       if (!mode.id().equalsIgnoreCase(this.difficulty == null ? "" : this.difficulty.trim())) {
          fixes.add("difficulty '" + this.difficulty + "' is not valid; using NORMAL.");
@@ -180,8 +209,23 @@ public final class DragonBrainConfig implements TuningFactory.ConfigView {
          case DIVE -> this.mechanicDive;
          case WING_GUST -> this.mechanicWingGust;
          case VOID_PULSE -> this.mechanicVoidPulse;
+         case DREAD_ROAR -> this.mechanicDreadRoar;
+         case VOID_RIFT -> this.mechanicVoidRift;
+         case METEOR_STORM -> this.mechanicMeteorStorm;
+         case GRAVITY_WELL -> this.mechanicGravityWell;
          case REPOSITION -> true;
          case HOVER -> true;
+      };
+   }
+
+   @Override
+   public float abilityCooldownMultiplier(AttackType type) {
+      return switch (type) {
+         case VOID_RIFT -> this.voidRiftCooldownMultiplier;
+         case METEOR_STORM -> this.meteorCooldownMultiplier;
+         case DREAD_ROAR -> this.dreadRoarCooldownMultiplier;
+         case GRAVITY_WELL -> this.gravityWellCooldownMultiplier;
+         default -> 1.0F;
       };
    }
 

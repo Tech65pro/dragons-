@@ -65,6 +65,17 @@ public final class DragonCombatController {
    private int pulseAge = -1;
    private int pulseDuration;
    private float pulseRadius;
+   // --- DragonBrain 3.0 ability runtimes (all bounded, server-authoritative) ---
+   private Vec3d riftCenter = Vec3d.ZERO;
+   private double riftYaw;
+   private int riftLaneCount = 3;
+   private int riftResidualTicks;
+   private Vec3d wellCenter = Vec3d.ZERO;
+   private int wellAge = -1;
+   private int wellDuration;
+   private final List<DragonCombatController.Meteor> meteors = new ArrayList();
+   private int meteorsLeftToSpawn;
+   private int meteorSpawnCooldown;
    private int staggerMeter;
    private int staggerCooldown;
    private int overchargeTicks;
@@ -89,6 +100,7 @@ public final class DragonCombatController {
       } else if (this.dragon.getPhaseManager().getCurrent().getType() == PhaseType.DYING) {
          this.music.onDying(world, this.dragon);
          this.pulseAge = -1;
+         this.clearAbilityRuntimes();
       } else {
          this.age++;
          this.refreshTuning(false);
@@ -131,6 +143,11 @@ public final class DragonCombatController {
          this.tickAmbient(world, config);
          this.adaptive.tick();
          this.staggerCooldown = Math.max(0, this.staggerCooldown - 1);
+         // DragonBrain 3.0 bugfix: in 2.0 this cooldown was set but never
+         // decremented, so only the first phase transition of a fight ever
+         // played its sound/particles or paused the scheduler. Later
+         // transitions (e.g. Final after Rage) were silently skipped.
+         this.transitionCooldown = Math.max(0, this.transitionCooldown - 1);
       }
    }
 
@@ -144,7 +161,10 @@ public final class DragonCombatController {
       }
 
       double floorY = this.dragon.getFightOrigin().getY();
-      if (Math.abs(this.dragon.getY() - floorY) < 48.0) {
+      // DragonBrain 3.0 fix: 2.0 re-added VOID_PULSE near the ground even when
+      // mechanicVoidPulse was disabled in the config. The toggle is now honored;
+      // behavior is unchanged while the mechanic is enabled.
+      if (config.mechanicVoidPulse && Math.abs(this.dragon.getY() - floorY) < 48.0) {
          this.available.add(AttackType.VOID_PULSE);
       }
 
@@ -301,6 +321,37 @@ public final class DragonCombatController {
                this.pulseDuration = 40;
                this.playSound(world, ModSounds.VOID_PULSE, 0.9F, 1.35F, pos);
                this.ring(world, ParticleTypes.PORTAL, this.pulseCenter.add(0.0, 0.2, 0.0), 1.5, 20);
+               break;
+            case VOID_RIFT:
+               // The lane layout is decided now and drawn faithfully for the
+               // whole telegraph window: damage zones never move mid-charge.
+               this.riftCenter = this.groundPoint(this.target);
+               this.riftYaw = this.random.nextDouble() * Math.PI;
+               this.riftLaneCount = switch (this.tuning.mode()) {
+                  case ROOKIE -> 2;
+                  case EXPERT -> 4;
+                  default -> 3;
+               };
+               if (this.phase == BossPhase.CATACLYSM) {
+                  this.riftLaneCount = Math.min(5, this.riftLaneCount + 1);
+               }
+
+               this.playSound(world, ModSounds.VOID_RIFT_CHARGE, 1.0F, 1.0F, this.riftCenter);
+               break;
+            case METEOR_STORM:
+               // A sky-facing scream is the warning; every meteor then gets
+               // its own ground glyph + whistle while it falls.
+               this.playSound(world, ModSounds.DREAD_ROAR, 0.8F, 0.6F, pos);
+               this.ring(world, ParticleTypes.SOUL_FIRE_FLAME, pos.add(0.0, 1.0, 0.0), 4.0, 30);
+               break;
+            case DREAD_ROAR:
+               this.playSound(world, ModSounds.VOID_RIFT_CHARGE, 0.8F, 0.5F, pos);
+               this.burst(world, ParticleTypes.SOUL, pos.add(0.0, 1.0, 0.0), 16, 1.5);
+               break;
+            case GRAVITY_WELL:
+               this.wellCenter = this.groundPoint(this.target);
+               this.playSound(world, ModSounds.GRAVITY_WELL, 0.8F, 1.4F, this.wellCenter);
+               this.ring(world, ParticleTypes.REVERSE_PORTAL, this.wellCenter.add(0.0, 0.2, 0.0), config.gravityWellRadius, 40);
          }
       }
    }
@@ -350,6 +401,12 @@ public final class DragonCombatController {
    private void endAttack(ServerWorld world) {
       this.pulseAge = this.pulseAge >= 0 && this.pulseAge < this.pulseDuration ? this.pulseAge : -1;
       AttackType attack = this.scheduler.getCurrentAttack();
+      if (attack == AttackType.METEOR_STORM) {
+         // The storm must not leak fresh meteors past its active window;
+         // already-falling meteors still land with their own glyphs.
+         this.meteorsLeftToSpawn = 0;
+      }
+
       if (attack != null && attack.isDamaging() && !this.currentAttackHit && this.scheduler.getState() == CombatState.RECOVERY) {
          this.scheduler.onAttackWhiffed();
       }
@@ -422,7 +479,12 @@ public final class DragonCombatController {
                double dot = dir.dotProduct(forward);
                if (!(dot < -0.15)) {
                   double strength = (1.0 - distance / radius) * (0.6 + Math.max(0.0, dot) * 0.9);
-                  player.takeKnockback(strength * 1.6, dir.x, dir.z);
+                  // DragonBrain 3.0 bugfix: LivingEntity.takeKnockback pushes
+                  // along the NEGATIVE of (x, z), which must point from the
+                  // victim toward the knockback source. 2.0 passed the outward
+                  // direction here, so Wing Gust pulled players INTO the
+                  // dragon instead of blasting them away.
+                  player.takeKnockback(strength * 1.6, -dir.x, -dir.z);
                   player.addVelocity(0.0, 0.35 * strength, 0.0);
                   this.scheduler.onDamageDealt(0.25F);
                   this.adaptive.onAttackLanded();
@@ -972,6 +1034,7 @@ public final class DragonCombatController {
             this.staggerCooldown = 600;
             if (this.scheduler.interrupt(this.tuning, "stagger")) {
                this.pulseAge = -1;
+               this.clearAbilityRuntimes();
                this.dragon.getPhaseManager().setPhase(PhaseType.HOVER);
                Vec3d pos = this.dragon.getEntityPos();
                this.playSound(world, ModSounds.STAGGER, 1.0F, 1.0F, pos);
@@ -1110,6 +1173,7 @@ public final class DragonCombatController {
       if (this.scheduler.getState() != CombatState.IDLE) {
          this.scheduler.reset();
          this.pulseAge = -1;
+         this.clearAbilityRuntimes();
          this.currentAttackHit = false;
       }
    }

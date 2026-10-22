@@ -25,6 +25,16 @@ public class EnderDragonRenderStateMixin implements DragonBrainRenderState {
    }
 
    @Override
+   public void dragonbrain$setCataclysmPhase(boolean cataclysmPhase) {
+      this.dragonbrain$cataclysmPhase = cataclysmPhase;
+   }
+
+   @Override
+   public boolean dragonbrain$isCataclysmPhase() {
+      return this.dragonbrain$cataclysmPhase;
+   }
+
+   @Override
    public void dragonbrain$setHealthRatio(float ratio) {
       this.dragonbrain$healthRatio = ratio;
    }
