@@ -72,7 +72,7 @@ public final class DragonBrainCommands {
       DragonBrainConfig config = ConfigManager.get();
       ServerCommandSource source = (ServerCommandSource)context.getSource();
       source.sendFeedback(
-         () -> Text.literal("DragonBrain 2.0")
+         () -> Text.literal("DragonBrain 3.0")
             .formatted(Formatting.LIGHT_PURPLE)
             .append(Text.literal(" — difficulty: ").formatted(Formatting.GRAY))
             .append(Text.literal(config.difficulty).formatted(Formatting.AQUA)),

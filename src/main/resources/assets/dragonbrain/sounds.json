@@ -88,5 +88,53 @@
     "sounds": [
       { "name": "dragonbrain:music_final", "volume": 0.6, "stream": true }
     ]
+  },
+  "void_rift_charge": {
+    "subtitle": "subtitles.dragonbrain.void_rift_charge",
+    "sounds": [
+      { "name": "dragonbrain:void_rift_charge", "volume": 0.8, "attenuation_distance": 64 }
+    ]
+  },
+  "void_rift_erupt": {
+    "subtitle": "subtitles.dragonbrain.void_rift_erupt",
+    "sounds": [
+      { "name": "dragonbrain:void_rift_erupt", "volume": 0.9, "attenuation_distance": 96 }
+    ]
+  },
+  "meteor_whistle": {
+    "subtitle": "subtitles.dragonbrain.meteor_whistle",
+    "sounds": [
+      { "name": "dragonbrain:meteor_whistle", "volume": 0.7, "attenuation_distance": 64 }
+    ]
+  },
+  "meteor_impact": {
+    "subtitle": "subtitles.dragonbrain.meteor_impact",
+    "sounds": [
+      { "name": "dragonbrain:meteor_impact", "volume": 0.95, "attenuation_distance": 96 }
+    ]
+  },
+  "dread_roar": {
+    "subtitle": "subtitles.dragonbrain.dread_roar",
+    "sounds": [
+      { "name": "dragonbrain:dread_roar", "volume": 1.0, "attenuation_distance": 128 }
+    ]
+  },
+  "gravity_well": {
+    "subtitle": "subtitles.dragonbrain.gravity_well",
+    "sounds": [
+      { "name": "dragonbrain:gravity_well", "volume": 0.85, "attenuation_distance": 64 }
+    ]
+  },
+  "cataclysm_transition": {
+    "subtitle": "subtitles.dragonbrain.cataclysm_transition",
+    "sounds": [
+      { "name": "dragonbrain:cataclysm_transition", "volume": 1.0, "attenuation_distance": 160 }
+    ]
+  },
+  "music_cataclysm": {
+    "subtitle": "subtitles.dragonbrain.music_cataclysm",
+    "sounds": [
+      { "name": "dragonbrain:music_cataclysm", "volume": 0.62, "stream": true }
+    ]
   }
 }

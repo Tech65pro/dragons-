@@ -120,6 +120,11 @@ public final class DragonCombatController {
          }
 
          this.tickPulse(world, config);
+         this.tickTelegraphVisuals(world, config);
+         this.tickRiftResidual(world, config);
+         this.tickMeteors(world, config);
+         this.tickWell(world, config);
+         this.tickCataclysmAura(world, config);
          this.tickOvercharge(world, config);
          this.tickStagger(world);
          this.music.tick(world, this.dragon, this.phase, this.target != null, config);
@@ -235,7 +240,10 @@ public final class DragonCombatController {
       float ratio = this.dragon.getHealth() / this.dragon.getMaxHealth();
       float rageThreshold = config.mechanicRagePhase ? config.rageHealthThreshold : -1.0F;
       float finalThreshold = config.mechanicFinalPhase ? config.finalPhaseHealthThreshold : -1.0F;
-      BossPhase desired = BossPhase.forHealth(ratio, Math.max(0.02F, rageThreshold), Math.max(0.01F, finalThreshold));
+      float cataclysmThreshold = config.mechanicCataclysmPhase ? config.cataclysmHealthThreshold : -1.0F;
+      BossPhase desired = BossPhase.forHealth(
+         ratio, Math.max(0.02F, rageThreshold), Math.max(0.01F, finalThreshold), Math.max(0.005F, cataclysmThreshold)
+      );
       if (desired != this.phase) {
          BossPhase previous = this.phase;
          this.phase = desired;
@@ -246,7 +254,19 @@ public final class DragonCombatController {
             this.scheduler.beginPhaseTransition();
             this.adaptive.reset();
             Vec3d pos = this.dragon.getEntityPos();
-            if (desired == BossPhase.RAGE && previous == BossPhase.NORMAL) {
+            if (desired == BossPhase.CATACLYSM) {
+               // One dramatic, bounded sequence. The scheduler's
+               // PHASE_TRANSITION state pauses attacks while it plays, and the
+               // desired != phase edge trigger above (plus this cooldown)
+               // guarantees it cannot retrigger while health stays low.
+               this.playSound(world, ModSounds.CATACLYSM_TRANSITION, 1.0F, 1.0F, pos);
+               this.playSound(world, ModSounds.DREAD_ROAR, 0.7F, 0.7F, pos);
+               this.clearAbilityRuntimes();
+               this.ring(world, ParticleTypes.END_ROD, pos, 3.0, this.scaledParticles(40, config));
+               this.ring(world, ParticleTypes.PORTAL, pos.add(0.0, 0.5, 0.0), 5.0, this.scaledParticles(60, config));
+               this.ring(world, ParticleTypes.SOUL_FIRE_FLAME, pos.add(0.0, 1.0, 0.0), 7.0, this.scaledParticles(80, config));
+               this.burst(world, ParticleTypes.DRAGON_BREATH, pos.add(0.0, 1.0, 0.0), this.scaledParticles(40, config), 2.5);
+            } else if (desired == BossPhase.RAGE && previous == BossPhase.NORMAL) {
                this.playSound(world, ModSounds.RAGE, 1.0F, 0.85F, pos);
                this.ring(world, ParticleTypes.SOUL_FIRE_FLAME, pos, 3.0, 40);
             } else if (desired == BossPhase.FINAL) {
@@ -307,6 +327,22 @@ public final class DragonCombatController {
                this.pulseRadius = 1.0F;
                this.pulseHitPlayers.clear();
                this.playSound(world, ModSounds.VOID_PULSE, 1.0F, 0.9F, pos);
+               break;
+            case VOID_RIFT:
+               this.eruptRift(world, config);
+               break;
+            case METEOR_STORM:
+               this.startMeteorStorm(config);
+               break;
+            case DREAD_ROAR:
+               this.dreadRoar(world, config);
+               break;
+            case GRAVITY_WELL:
+               this.wellAge = 0;
+               // The release pulse fires a few ticks before the ATTACK state
+               // ends so damage always lands inside the active window.
+               this.wellDuration = Math.max(12, this.tuning.activeTicks(AttackType.GRAVITY_WELL) - 4);
+               this.playSound(world, ModSounds.GRAVITY_WELL, 1.0F, 1.0F, this.wellCenter);
          }
       }
    }
@@ -336,6 +372,10 @@ public final class DragonCombatController {
 
          if (this.phase == BossPhase.FINAL) {
             count++;
+         }
+
+         if (this.phase == BossPhase.CATACLYSM) {
+            count += 2;
          }
 
          Vec3d head = new Vec3d(
@@ -436,7 +476,9 @@ public final class DragonCombatController {
                      player.damage(world, this.dragon.getDamageSources().magic(), damage);
                   }
 
-                  player.takeKnockback(0.6, dx, dz);
+                  // 3.0 bugfix: same inverted knockback direction as Wing
+                  // Gust - the pulse ring now pushes players outward.
+                  player.takeKnockback(0.6, -dx, -dz);
                }
             }
          }
@@ -446,6 +488,445 @@ public final class DragonCombatController {
             this.pulseHitPlayers.clear();
          }
       }
+   }
+
+   // ---------------------------------------------------------------------------
+   // DragonBrain 3.0 abilities. Shared fairness rules:
+   //  * layouts/positions are fixed at telegraph start and never track the
+   //    player afterwards, so moving out of the marked area always works;
+   //  * damage is applied once per player per impact, only while the
+   //    scheduler is in its ATTACK window (checked via allowsDamage());
+   //  * every loop is bounded (meteors, particle steps and lifetimes are
+   //    capped) and no blocks are ever modified.
+   // ---------------------------------------------------------------------------
+
+   private static final DustParticleEffect RIFT_GLYPH = new DustParticleEffect(0xFF9D4DFF, 1.5F);
+   private static final DustParticleEffect ABYSS_DUST = new DustParticleEffect(0xFFC77DFF, 1.2F);
+   private static final double RIFT_HALF_LENGTH = 12.0;
+   private static final double RIFT_HALF_WIDTH = 1.2;
+   private static final int METEOR_MAX_ACTIVE = 4;
+   private static final int METEOR_SPAWN_INTERVAL_TICKS = 7;
+   private static final int METEOR_FALL_TICKS = 17;
+
+   private void clearAbilityRuntimes() {
+      this.riftResidualTicks = 0;
+      this.wellAge = -1;
+      this.meteors.clear();
+      this.meteorsLeftToSpawn = 0;
+      this.meteorSpawnCooldown = 0;
+   }
+
+   private int scaledParticles(int base, DragonBrainConfig config) {
+      return Math.max(1, Math.round(base * config.particleDensityMultiplier));
+   }
+
+   /** Per-tick telegraph rendering for the 3.0 ground-targeted abilities. */
+   private void tickTelegraphVisuals(ServerWorld world, DragonBrainConfig config) {
+      if (this.scheduler.getState() != CombatState.TELEGRAPH || this.age % 2 != 0) {
+         return;
+      }
+      AttackType attack = this.scheduler.getCurrentAttack();
+      if (attack == null) {
+         return;
+      }
+      int planned = Math.max(1, this.scheduler.getPlannedStateTicks());
+      float progress = Math.min(1.0F, (float)this.scheduler.getTicksInState() / planned);
+      switch (attack) {
+         case VOID_RIFT -> this.drawRiftLanes(world, config, progress);
+         case GRAVITY_WELL -> {
+            this.ring(world, ParticleTypes.PORTAL, this.wellCenter.add(0.0, 0.2, 0.0), config.gravityWellRadius, this.scaledParticles(40, config));
+            this.drawInwardSpiral(world, this.wellCenter, config.gravityWellRadius, config);
+         }
+         case DREAD_ROAR -> {
+            // The warning ring expands toward the true blast radius so the
+            // safe distance is readable before the roar lands.
+            Vec3d pos = this.dragon.getEntityPos();
+            double r = config.dreadRoarRadius * (0.35 + 0.65 * progress);
+            this.ring(world, ABYSS_DUST, pos.add(0.0, 0.3, 0.0), r, this.scaledParticles(44, config));
+         }
+         case METEOR_STORM -> {
+            Vec3d pos = this.dragon.getEntityPos();
+            this.burst(world, ParticleTypes.REVERSE_PORTAL, pos.add(0.0, 3.0, 0.0), this.scaledParticles(3, config), 3.0);
+         }
+         default -> {
+         }
+      }
+   }
+
+   private double[] riftLaneOffsets() {
+      // Lane centre offsets along the fissure's perpendicular axis. The gaps
+      // between lanes are always >= 2 blocks wide: the safe lanes.
+      return switch (this.riftLaneCount) {
+         case 2 -> new double[]{-2.6, 2.6};
+         case 4 -> new double[]{-6.6, -2.2, 2.2, 6.6};
+         default -> new double[]{-4.4, 0.0, 4.4};
+      };
+   }
+
+   private boolean inRiftLane(double x, double z) {
+      double dx = x - this.riftCenter.x;
+      double dz = z - this.riftCenter.z;
+      double cos = Math.cos(this.riftYaw);
+      double sin = Math.sin(this.riftYaw);
+      double u = dx * cos + dz * sin;
+      if (Math.abs(u) > RIFT_HALF_LENGTH) {
+         return false;
+      }
+      double v = -dx * sin + dz * cos;
+      for (double offset : this.riftLaneOffsets()) {
+         if (Math.abs(v - offset) <= RIFT_HALF_WIDTH) {
+            return true;
+         }
+      }
+      return false;
+   }
+
+   private void drawRiftLanes(ServerWorld world, DragonBrainConfig config, float intensity) {
+      double cos = Math.cos(this.riftYaw);
+      double sin = Math.sin(this.riftYaw);
+      for (double offset : this.riftLaneOffsets()) {
+         for (double u = -RIFT_HALF_LENGTH; u <= RIFT_HALF_LENGTH; u += 1.6) {
+            for (double edge : new double[]{offset - RIFT_HALF_WIDTH, offset + RIFT_HALF_WIDTH}) {
+               double x = this.riftCenter.x + u * cos - edge * sin;
+               double z = this.riftCenter.z + u * sin + edge * cos;
+               world.spawnParticles(RIFT_GLYPH, x, this.riftCenter.y + 0.15, z, 1, 0.0, 0.02, 0.0, 0.0);
+            }
+         }
+      }
+      if (intensity > 0.6F) {
+         // Final moments: the fissure starts venting so the eruption reads
+         // as a release, not a surprise.
+         this.burst(world, ParticleTypes.PORTAL, this.riftCenter.add(0.0, 0.3, 0.0), this.scaledParticles(6, config), 5.0);
+      }
+   }
+
+   private void eruptRift(ServerWorld world, DragonBrainConfig config) {
+      this.playSound(world, ModSounds.VOID_RIFT_ERUPT, 1.0F, 1.0F, this.riftCenter);
+      this.riftResidualTicks = 6;
+      double cos = Math.cos(this.riftYaw);
+      double sin = Math.sin(this.riftYaw);
+      for (double offset : this.riftLaneOffsets()) {
+         for (double u = -RIFT_HALF_LENGTH; u <= RIFT_HALF_LENGTH; u += 1.3) {
+            double x = this.riftCenter.x + u * cos - offset * sin;
+            double z = this.riftCenter.z + u * sin + offset * cos;
+            world.spawnParticles(ParticleTypes.DRAGON_BREATH, x, this.riftCenter.y + 0.4, z, 1, 0.15, 0.7, 0.15, 0.05);
+            world.spawnParticles(ABYSS_DUST, x, this.riftCenter.y + 0.2, z, 1, 0.1, 0.5, 0.1, 0.03);
+         }
+      }
+
+      float damage = this.tuning.clampDamage(config.voidRiftDamage);
+      for (ServerPlayerEntity player : world.getPlayers()) {
+         if (player.isSpectator() || player.isCreative()) {
+            continue;
+         }
+         if (!this.inRiftLane(player.getX(), player.getZ())
+            || player.getY() > this.riftCenter.y + 2.6
+            || player.getY() < this.riftCenter.y - 3.0) {
+            continue;
+         }
+         this.currentAttackHit = true;
+         if (damage > 0.01F && this.scheduler.allowsDamage()) {
+            if (player.damage(world, this.dragon.getDamageSources().magic(), damage)) {
+               this.scheduler.onDamageDealt(AttackType.VOID_RIFT.pressureWeight());
+               this.adaptive.onAttackLanded();
+            }
+         }
+         // Launch up and out of the fissure so a surviving player is not
+         // trapped standing in the visual residue.
+         player.addVelocity(0.0, 0.42, 0.0);
+         player.velocityDirty = true;
+      }
+   }
+
+   private void tickRiftResidual(ServerWorld world, DragonBrainConfig config) {
+      if (this.riftResidualTicks <= 0) {
+         return;
+      }
+      this.riftResidualTicks--;
+      // Purely visual fading vents; no damage after the eruption tick.
+      this.burst(world, ParticleTypes.PORTAL, this.riftCenter.add(0.0, 0.3, 0.0), this.scaledParticles(4, config), 6.0);
+   }
+
+   private void startMeteorStorm(DragonBrainConfig config) {
+      float scale = switch (this.tuning.mode()) {
+         case ROOKIE -> 0.7F;
+         case EXPERT -> 1.3F;
+         default -> 1.0F;
+      };
+      int count = Math.round(config.meteorCount * scale);
+      if (this.phase == BossPhase.CATACLYSM) {
+         count += 2; // storm surge
+      }
+      this.meteorsLeftToSpawn = Math.max(1, Math.min(16, count));
+      this.meteorSpawnCooldown = 0;
+   }
+
+   private void tickMeteors(ServerWorld world, DragonBrainConfig config) {
+      // Spawning stops early enough that every meteor impacts inside the
+      // scheduler's ATTACK window (fairness: no damage outside the window).
+      boolean maySpawn = this.meteorsLeftToSpawn > 0
+         && this.meteors.size() < METEOR_MAX_ACTIVE
+         && this.scheduler.getState() == CombatState.ATTACK
+         && this.scheduler.getCurrentAttack() == AttackType.METEOR_STORM
+         && this.scheduler.getTicksInState() + METEOR_FALL_TICKS + 6 <= this.scheduler.getPlannedStateTicks();
+      if (maySpawn) {
+         if (--this.meteorSpawnCooldown <= 0) {
+            this.meteorSpawnCooldown = METEOR_SPAWN_INTERVAL_TICKS;
+            this.meteorsLeftToSpawn--;
+            this.spawnMeteor(world);
+         }
+      }
+
+      for (int i = this.meteors.size() - 1; i >= 0; i--) {
+         DragonCombatController.Meteor meteor = (DragonCombatController.Meteor)this.meteors.get(i);
+         meteor.ticksToImpact--;
+         // Ground marker ring drawn every tick for the whole fall.
+         this.ring(world, RIFT_GLYPH, meteor.impact.add(0.0, 0.15, 0.0), config.meteorRadius, this.scaledParticles(14, config));
+         double height = meteor.ticksToImpact * 1.7;
+         world.spawnParticles(
+            ParticleTypes.SOUL_FIRE_FLAME, meteor.impact.x, meteor.impact.y + height, meteor.impact.z, 2, 0.2, 0.4, 0.2, 0.01
+         );
+         world.spawnParticles(
+            ParticleTypes.REVERSE_PORTAL, meteor.impact.x, meteor.impact.y + height + 1.0, meteor.impact.z, 1, 0.15, 0.3, 0.15, 0.01
+         );
+         if (meteor.ticksToImpact <= 0) {
+            this.meteors.remove(i);
+            this.impactMeteor(world, config, meteor);
+         }
+      }
+   }
+
+   private void spawnMeteor(ServerWorld world) {
+      Vec3d impact = this.meteorAimPoint(world);
+      if (impact == null) {
+         return;
+      }
+      DragonCombatController.Meteor meteor = new DragonCombatController.Meteor();
+      meteor.impact = impact;
+      meteor.ticksToImpact = METEOR_FALL_TICKS + this.random.nextInt(5);
+      this.meteors.add(meteor);
+      // Whistle from the sky at the impact column; capped by the active cap.
+      this.playSound(world, ModSounds.METEOR_WHISTLE, 0.8F, 0.9F + this.random.nextFloat() * 0.25F, impact.add(0.0, 24.0, 0.0));
+   }
+
+   @Nullable
+   private Vec3d meteorAimPoint(ServerWorld world) {
+      this.scratchIds.clear();
+      ServerPlayerEntity chosen = null;
+      for (ServerPlayerEntity player : world.getPlayers()) {
+         if (player.isAlive() && !player.isSpectator() && !player.isCreative() && player.squaredDistanceTo(this.dragon) <= 128.0 * 128.0) {
+            if (chosen == null || this.random.nextBoolean()) {
+               chosen = player;
+            }
+         }
+      }
+      if (chosen == null && this.target != null) {
+         return this.groundPoint(this.target);
+      }
+      if (chosen == null) {
+         return null;
+      }
+      // Imperfect aim, same philosophy as AimSolver: partial prediction plus
+      // a bounded random offset, so a moving player walks out of the circle.
+      Vec3d velocity = chosen.getVelocity();
+      double lead = METEOR_FALL_TICKS * this.tuning.predictionStrength() * 0.6;
+      double x = chosen.getX() + velocity.x * lead + AimSolver.gaussian(this.random) * 3.0;
+      double z = chosen.getZ() + velocity.z * lead + AimSolver.gaussian(this.random) * 3.0;
+      double floor = this.dragon.getFightOrigin().getY() + 1.0;
+      return new Vec3d(x, Math.max(floor, chosen.getY()), z);
+   }
+
+   private void impactMeteor(ServerWorld world, DragonBrainConfig config, DragonCombatController.Meteor meteor) {
+      Vec3d impact = meteor.impact;
+      this.playSound(world, ModSounds.METEOR_IMPACT, 1.0F, 0.95F + this.random.nextFloat() * 0.1F, impact);
+      this.ring(world, ParticleTypes.SOUL_FIRE_FLAME, impact.add(0.0, 0.2, 0.0), config.meteorRadius, this.scaledParticles(30, config));
+      this.ring(world, ABYSS_DUST, impact.add(0.0, 0.35, 0.0), config.meteorRadius * 0.6, this.scaledParticles(20, config));
+      this.burst(world, ParticleTypes.DRAGON_BREATH, impact.add(0.0, 0.5, 0.0), this.scaledParticles(14, config), 1.2);
+
+      float baseDamage = this.tuning.clampDamage(config.meteorDamage);
+      for (ServerPlayerEntity player : world.getPlayers()) {
+         if (player.isSpectator() || player.isCreative()) {
+            continue;
+         }
+         double dx = player.getX() - impact.x;
+         double dz = player.getZ() - impact.z;
+         double distance = Math.sqrt(dx * dx + dz * dz);
+         if (distance > config.meteorRadius || player.getY() > impact.y + 3.0 || player.getY() < impact.y - 3.0) {
+            continue;
+         }
+         // One instantaneous AoE check per meteor: a player can never be hit
+         // twice by the same impact.
+         this.currentAttackHit = true;
+         double falloff = 1.0 - 0.55 * (distance / config.meteorRadius);
+         float damage = (float)(baseDamage * falloff);
+         if (damage > 0.01F && this.scheduler.allowsDamage()) {
+            // mobAttack routes through the Fabric ALLOW_DAMAGE interval guard
+            // in CombatManager, which registers the hit for pressure/adaptive
+            // bookkeeping only when the damage is actually allowed through.
+            player.damage(world, this.dragon.getDamageSources().mobAttack(this.dragon), damage);
+         }
+         player.takeKnockback(0.75 * falloff, -dx, -dz);
+         player.addVelocity(0.0, 0.25 * falloff, 0.0);
+      }
+   }
+
+   private void dreadRoar(ServerWorld world, DragonBrainConfig config) {
+      Vec3d origin = this.dragon.getEntityPos();
+      this.playSound(world, ModSounds.DREAD_ROAR, 1.0F, 1.0F, origin);
+      Vec3d head = new Vec3d(this.dragon.head.getX(), this.dragon.head.getBodyY(0.5) + 0.5, this.dragon.head.getZ());
+      world.spawnParticles(ParticleTypes.SONIC_BOOM, head.x, head.y, head.z, 1, 0.0, 0.0, 0.0, 0.0);
+      this.ring(world, ABYSS_DUST, origin.add(0.0, 0.4, 0.0), config.dreadRoarRadius * 0.55, this.scaledParticles(40, config));
+      this.ring(world, ParticleTypes.SOUL, origin.add(0.0, 0.6, 0.0), config.dreadRoarRadius, this.scaledParticles(56, config));
+
+      float yaw = this.dragon.getYaw();
+      Vec3d forward = new Vec3d(-Math.sin(Math.toRadians(yaw)), 0.0, Math.cos(Math.toRadians(yaw))).normalize();
+      float baseDamage = this.tuning.clampDamage(config.dreadRoarDamage);
+      for (ServerPlayerEntity player : world.getPlayers()) {
+         if (player.isSpectator() || player.isCreative()) {
+            continue;
+         }
+         double dx = player.getX() - origin.x;
+         double dz = player.getZ() - origin.z;
+         double distance = Math.sqrt(dx * dx + dz * dz);
+         if (distance > config.dreadRoarRadius || distance < 0.01 || Math.abs(player.getY() - origin.y) > 9.0) {
+            continue;
+         }
+         double dot = (dx / distance) * forward.x + (dz / distance) * forward.z;
+         // Frontal cone takes the full shockwave; directly behind the dragon
+         // only the inner half-ring connects. Distance and pillar cover are
+         // the other two counterplays: no line of sight halves the effect.
+         boolean inCone = dot > 0.1;
+         if (!inCone && distance > config.dreadRoarRadius * 0.45) {
+            continue;
+         }
+         double falloff = 1.0 - distance / config.dreadRoarRadius;
+         double scale = (inCone ? 1.0 : 0.5) * (0.35 + 0.65 * falloff);
+         if (!this.dragon.canSee(player)) {
+            scale *= 0.5;
+         }
+         this.currentAttackHit = true;
+         float damage = (float)(baseDamage * scale);
+         if (damage > 0.01F && this.scheduler.allowsDamage()) {
+            player.damage(world, this.dragon.getDamageSources().mobAttack(this.dragon), damage);
+         }
+         player.takeKnockback(1.15 * scale, -dx, -dz);
+         player.addVelocity(0.0, 0.28 * scale, 0.0);
+      }
+   }
+
+   private void drawInwardSpiral(ServerWorld world, Vec3d center, double radius, DragonBrainConfig config) {
+      int points = this.scaledParticles(10, config);
+      double shrink = 1.0 - (this.age % 12) / 12.0;
+      for (int i = 0; i < points; i++) {
+         double angle = (Math.PI * 2) * i / points + this.age * 0.15;
+         double r = radius * shrink;
+         world.spawnParticles(
+            ParticleTypes.PORTAL, center.x + Math.cos(angle) * r, center.y + 0.3, center.z + Math.sin(angle) * r, 1, 0.0, 0.02, 0.0, 0.0
+         );
+      }
+   }
+
+   private void tickWell(ServerWorld world, DragonBrainConfig config) {
+      if (this.wellAge < 0) {
+         return;
+      }
+      this.wellAge++;
+      double radius = config.gravityWellRadius;
+      if (this.wellAge % 4 == 0) {
+         this.ring(world, ABYSS_DUST, this.wellCenter.add(0.0, 0.2, 0.0), radius, this.scaledParticles(36, config));
+      }
+      this.drawInwardSpiral(world, this.wellCenter, radius, config);
+
+      if (this.wellAge >= this.wellDuration) {
+         this.releaseWell(world, config);
+         this.wellAge = -1;
+         return;
+      }
+
+      // Gentle pull only: strictly weaker than walking speed, applied as a
+      // small per-tick acceleration with no snapping, teleporting or rooting.
+      float difficultyScale = switch (this.tuning.mode()) {
+         case ROOKIE -> 0.8F;
+         case EXPERT -> 1.15F;
+         default -> 1.0F;
+      };
+      double pull = config.gravityWellPullStrength * difficultyScale;
+      if (pull <= 0.001) {
+         return;
+      }
+      for (ServerPlayerEntity player : world.getPlayers()) {
+         if (player.isSpectator() || player.isCreative()) {
+            continue;
+         }
+         double dx = this.wellCenter.x - player.getX();
+         double dz = this.wellCenter.z - player.getZ();
+         double distance = Math.sqrt(dx * dx + dz * dz);
+         if (distance > radius || distance < 0.5 || Math.abs(player.getY() - this.wellCenter.y) > 4.0) {
+            continue;
+         }
+         double edgeTaper = 0.45 + 0.55 * (1.0 - distance / radius);
+         player.addVelocity(dx / distance * pull * edgeTaper, 0.0, dz / distance * pull * edgeTaper);
+         player.velocityDirty = true;
+      }
+   }
+
+   private void releaseWell(ServerWorld world, DragonBrainConfig config) {
+      double radius = config.gravityWellRadius;
+      this.playSound(world, ModSounds.METEOR_IMPACT, 0.8F, 0.7F, this.wellCenter);
+      this.ring(world, ParticleTypes.SOUL_FIRE_FLAME, this.wellCenter.add(0.0, 0.3, 0.0), radius * 0.7, this.scaledParticles(40, config));
+      this.ring(world, ParticleTypes.PORTAL, this.wellCenter.add(0.0, 0.3, 0.0), radius, this.scaledParticles(48, config));
+      this.burst(world, ParticleTypes.DRAGON_BREATH, this.wellCenter.add(0.0, 0.6, 0.0), this.scaledParticles(20, config), 2.0);
+
+      float damage = this.tuning.clampDamage(config.gravityWellDamage);
+      for (ServerPlayerEntity player : world.getPlayers()) {
+         if (player.isSpectator() || player.isCreative()) {
+            continue;
+         }
+         double dx = player.getX() - this.wellCenter.x;
+         double dz = player.getZ() - this.wellCenter.z;
+         double distance = Math.sqrt(dx * dx + dz * dz);
+         if (distance > radius * 1.05 || Math.abs(player.getY() - this.wellCenter.y) > 4.0) {
+            continue;
+         }
+         this.currentAttackHit = true;
+         if (damage > 0.01F && this.scheduler.allowsDamage()) {
+            if (player.damage(world, this.dragon.getDamageSources().magic(), damage)) {
+               this.scheduler.onDamageDealt(AttackType.GRAVITY_WELL.pressureWeight());
+               this.adaptive.onAttackLanded();
+            }
+         }
+         // The release always throws survivors clear of the well.
+         player.takeKnockback(0.9, -dx, -dz);
+         player.addVelocity(0.0, 0.32, 0.0);
+      }
+   }
+
+   /** Cataclysm aura + attack trails. Strictly bounded spawn rates. */
+   private void tickCataclysmAura(ServerWorld world, DragonBrainConfig config) {
+      if (this.phase != BossPhase.CATACLYSM || !config.cataclysmAura || !config.ambientParticles) {
+         return;
+      }
+      Vec3d pos = this.dragon.getEntityPos();
+      if (this.age % 2 == 0) {
+         int count = this.scaledParticles(2, config);
+         for (int i = 0; i < count; i++) {
+            double x = pos.x + (this.random.nextDouble() - 0.5) * 7.0;
+            double y = pos.y + this.random.nextDouble() * 2.5;
+            double z = pos.z + (this.random.nextDouble() - 0.5) * 7.0;
+            ParticleEffect particle = (this.age + i) % 3 == 0 ? ABYSS_DUST : ParticleTypes.PORTAL;
+            world.spawnParticles(particle, x, y, z, 1, 0.0, 0.05, 0.0, 0.01);
+         }
+      }
+      if (this.scheduler.getState() == CombatState.ATTACK) {
+         world.spawnParticles(
+            ParticleTypes.SOUL_FIRE_FLAME, this.dragon.head.getX(), this.dragon.head.getBodyY(0.5), this.dragon.head.getZ(), 1, 0.2, 0.1, 0.2, 0.01
+         );
+      }
+   }
+
+   private static final class Meteor {
+      Vec3d impact = Vec3d.ZERO;
+      int ticksToImpact;
    }
 
    private void tickOvercharge(ServerWorld world, DragonBrainConfig config) {
@@ -610,9 +1091,17 @@ public final class DragonCombatController {
          this.pulseAge = -1;
          this.pulseHitPlayers.clear();
          this.target = null;
-         this.music.stop(world);
+         this.music.stop(world, this.dragon);
          if (world != null && ConfigManager.get().mechanicVictorySequence && this.dragon.isDead()) {
             VictorySequence.play(world, this.dragon.getEntityPos());
+            if (this.phase == BossPhase.CATACLYSM) {
+               // Short abyssal flourish layered over the untouched vanilla
+               // death sequence (XP, portal and egg are vanilla's business).
+               Vec3d pos = this.dragon.getEntityPos();
+               this.ring(world, ParticleTypes.END_ROD, pos.add(0.0, 1.0, 0.0), 6.0, 60);
+               this.ring(world, ParticleTypes.PORTAL, pos.add(0.0, 2.0, 0.0), 9.0, 80);
+               this.burst(world, ABYSS_DUST, pos.add(0.0, 2.0, 0.0), 40, 3.0);
+            }
          }
       }
    }
@@ -647,7 +1136,7 @@ public final class DragonCombatController {
             this.tuning.mode(),
             this.tuning.telegraphMultiplier()
          }
-      );
+      ) + " " + this.abilityLine();
    }
 
    public AdaptiveDifficulty adaptive() {

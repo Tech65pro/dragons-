@@ -7,10 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class DragonBrainConfig implements TuningFactory.ConfigView {
-   public static final int SCHEMA_VERSION = 2;
+   // Schema history: 2 = DragonBrain 2.0, 3 = DragonBrain 3.0 (Abyssal Cataclysm).
+   // Older files keep loading: Gson runs the field initializers for keys that
+   // are missing from the JSON, so every 3.0 option below simply receives its
+   // default when a 2.0 config is read.
+   public static final int SCHEMA_VERSION = 3;
    public transient List<String> corrections = new ArrayList();
    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-   public int schemaVersion = 2;
+   public int schemaVersion = 3;
    public boolean enabled = true;
    public String difficulty = "NORMAL";
    public boolean debug = false;
@@ -119,6 +123,34 @@ public final class DragonBrainConfig implements TuningFactory.ConfigView {
          fixes.add("finalPhaseHealthThreshold must be lower than rageHealthThreshold; adjusted.");
          this.finalPhaseHealthThreshold = this.rageHealthThreshold * 0.5F;
       }
+
+      // DragonBrain 3.0 options. All ranges are fairness clamps: damage caps keep
+      // every telegraphed hit survivable, the pull cap keeps the Gravity Well
+      // escapable on foot, and the meteor cap bounds entities/particles.
+      this.cataclysmHealthThreshold = clamp(fixes, "cataclysmHealthThreshold", this.cataclysmHealthThreshold, 0.01F, this.finalPhaseHealthThreshold);
+      if (this.cataclysmHealthThreshold >= this.finalPhaseHealthThreshold) {
+         fixes.add("cataclysmHealthThreshold must be lower than finalPhaseHealthThreshold; adjusted.");
+         this.cataclysmHealthThreshold = this.finalPhaseHealthThreshold * 0.5F;
+      }
+
+      this.voidRiftDamage = clamp(fixes, "voidRiftDamage", this.voidRiftDamage, 0.0F, 24.0F);
+      this.voidRiftCooldownMultiplier = clamp(fixes, "voidRiftCooldownMultiplier", this.voidRiftCooldownMultiplier, 0.4F, 3.0F);
+      this.meteorDamage = clamp(fixes, "meteorDamage", this.meteorDamage, 0.0F, 24.0F);
+      this.meteorRadius = clamp(fixes, "meteorRadius", this.meteorRadius, 1.0F, 6.0F);
+      this.meteorCooldownMultiplier = clamp(fixes, "meteorCooldownMultiplier", this.meteorCooldownMultiplier, 0.4F, 3.0F);
+      if (this.meteorCount < 1 || this.meteorCount > 16) {
+         fixes.add("meteorCount " + this.meteorCount + " out of range 1..16; clamped.");
+         this.meteorCount = Math.max(1, Math.min(16, this.meteorCount));
+      }
+
+      this.dreadRoarDamage = clamp(fixes, "dreadRoarDamage", this.dreadRoarDamage, 0.0F, 16.0F);
+      this.dreadRoarRadius = clamp(fixes, "dreadRoarRadius", this.dreadRoarRadius, 6.0F, 32.0F);
+      this.dreadRoarCooldownMultiplier = clamp(fixes, "dreadRoarCooldownMultiplier", this.dreadRoarCooldownMultiplier, 0.4F, 3.0F);
+      this.gravityWellDamage = clamp(fixes, "gravityWellDamage", this.gravityWellDamage, 0.0F, 20.0F);
+      this.gravityWellRadius = clamp(fixes, "gravityWellRadius", this.gravityWellRadius, 5.0F, 24.0F);
+      this.gravityWellPullStrength = clamp(fixes, "gravityWellPullStrength", this.gravityWellPullStrength, 0.0F, 0.35F);
+      this.gravityWellCooldownMultiplier = clamp(fixes, "gravityWellCooldownMultiplier", this.gravityWellCooldownMultiplier, 0.4F, 3.0F);
+      this.particleDensityMultiplier = clamp(fixes, "particleDensityMultiplier", this.particleDensityMultiplier, 0.25F, 2.0F);
 
       this.corrections = fixes;
       return fixes;

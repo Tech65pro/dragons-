@@ -35,15 +35,24 @@ public final class TuningFactory {
       float phaseCooldown = switch (phase) {
          case RAGE -> 0.85F;
          case FINAL -> 0.72F;
+         case CATACLYSM -> 0.62F;
          case NORMAL -> 1.0F;
       };
 
       float phaseRecovery = switch (phase) {
          case RAGE -> 0.9F;
          case FINAL -> 0.8F;
+         case CATACLYSM -> 0.72F;
          case NORMAL -> 1.0F;
       };
-      boolean combos = base.combos() && phase != BossPhase.NORMAL && config.mechanicComboChains();
+      // DragonBrain 3.0: 2.0 computed allowCombo but the scheduler never
+      // consumed it. 3.0 implements bounded combo chains: an Expert-flavoured
+      // tool in Rage/Final, and a signature of the Cataclysm phase on every
+      // difficulty. The scheduler still caps a chain at one extra attack and
+      // still enforces the config toggle and the minimum damage interval.
+      boolean combos = config.mechanicComboChains()
+         && phase != BossPhase.NORMAL
+         && (base.combos() || phase == BossPhase.CATACLYSM);
       return new DifficultyTuning(
          mode,
          scaleTicks(base.attackInterval(), config.attackFrequencyMultiplier()),
@@ -62,8 +71,20 @@ public final class TuningFactory {
          Math.max(1, base.consecutiveHits()),
          Math.max(10, Math.round(base.pressureCooldown() * config.recoveryDurationMultiplier())),
          clamp01(base.fakeoutChance()),
-         combos
+         combos,
+         abilityCooldownScales(config)
       );
+   }
+
+   private static Map<AttackType, Float> abilityCooldownScales(TuningFactory.ConfigView config) {
+      EnumMap<AttackType, Float> scales = new EnumMap(AttackType.class);
+      for (AttackType type : AttackType.values()) {
+         float scale = config.abilityCooldownMultiplier(type);
+         if (Math.abs(scale - 1.0F) > 1.0E-4F) {
+            scales.put(type, Math.max(0.05F, scale));
+         }
+      }
+      return scales;
    }
 
    private static int scaleTicks(int value, float multiplier) {

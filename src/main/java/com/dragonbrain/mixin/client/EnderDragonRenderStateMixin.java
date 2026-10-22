@@ -10,6 +10,8 @@ public class EnderDragonRenderStateMixin implements DragonBrainRenderState {
    @Unique
    private boolean dragonbrain$finalPhase;
    @Unique
+   private boolean dragonbrain$cataclysmPhase;
+   @Unique
    private float dragonbrain$healthRatio = 1.0F;
 
    @Override

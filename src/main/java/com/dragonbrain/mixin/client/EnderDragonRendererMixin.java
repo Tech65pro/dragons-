@@ -27,6 +27,8 @@ public class EnderDragonRendererMixin {
          dragonState.dragonbrain$setHealthRatio(ratio);
          boolean finalPhase = config.mechanicFinalPhase && ratio <= config.finalPhaseHealthThreshold * 1.15F;
          dragonState.dragonbrain$setFinalPhase(finalPhase);
+         boolean cataclysmPhase = config.mechanicCataclysmPhase && ratio <= config.cataclysmHealthThreshold * 1.15F;
+         dragonState.dragonbrain$setCataclysmPhase(cataclysmPhase);
       }
    }
 

@@ -13,5 +13,13 @@
   "subtitles.dragonbrain.stagger": "Ender Dragon staggers",
   "subtitles.dragonbrain.end_ambience": "End winds whisper",
   "subtitles.dragonbrain.music_boss": "DragonBrain combat theme",
-  "subtitles.dragonbrain.music_final": "DragonBrain final phase theme"
+  "subtitles.dragonbrain.music_final": "DragonBrain final phase theme",
+  "subtitles.dragonbrain.void_rift_charge": "Void rift tears open",
+  "subtitles.dragonbrain.void_rift_erupt": "Void rift erupts",
+  "subtitles.dragonbrain.meteor_whistle": "Something falls from the void",
+  "subtitles.dragonbrain.meteor_impact": "Void meteor impacts",
+  "subtitles.dragonbrain.dread_roar": "Ender Dragon unleashes a dread roar",
+  "subtitles.dragonbrain.gravity_well": "Gravity twists and pulls",
+  "subtitles.dragonbrain.cataclysm_transition": "The abyss breaks through",
+  "subtitles.dragonbrain.music_cataclysm": "DragonBrain cataclysm theme"
 }

@@ -27,6 +27,7 @@ public final class AttackScheduler {
    private int consecutiveHits;
    private AttackType lastAttack;
    private boolean fakeoutUsed;
+   private boolean comboUsed;
    private boolean phaseTransitionPending;
    private AttackType queuedAttack;
    private BossPhase phase = BossPhase.NORMAL;
@@ -197,7 +198,7 @@ public final class AttackScheduler {
       EnumMap<AttackType, Float> weights = new EnumMap(AttackType.class);
 
       for (AttackType type : available) {
-         if (type.isDamaging() && (Integer)this.cooldowns.getOrDefault(type, 0) <= 0 && !damagingLocked) {
+         if (type.isDamaging() && type.isUnlockedIn(this.phase) && (Integer)this.cooldowns.getOrDefault(type, 0) <= 0 && !damagingLocked) {
             float weight = this.baseWeight(type, distance, visible);
             if (!(weight <= 0.0F)) {
                weights.put(type, weight);
@@ -409,6 +410,7 @@ public final class AttackScheduler {
       public int attacksLanded;
       public int attacksCancelled;
       public int fakeouts;
+      public int combos;
       public int pressureBlocks;
 
       public void reset() {
@@ -416,6 +418,7 @@ public final class AttackScheduler {
          this.attacksLanded = 0;
          this.attacksCancelled = 0;
          this.fakeouts = 0;
+         this.combos = 0;
          this.pressureBlocks = 0;
       }
 

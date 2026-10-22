@@ -5,6 +5,10 @@ public interface DragonBrainRenderState {
 
    boolean dragonbrain$isFinalPhase();
 
+   void dragonbrain$setCataclysmPhase(boolean var1);
+
+   boolean dragonbrain$isCataclysmPhase();
+
    void dragonbrain$setHealthRatio(float var1);
 
    float dragonbrain$getHealthRatio();

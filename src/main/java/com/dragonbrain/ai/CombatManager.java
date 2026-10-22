@@ -249,6 +249,9 @@ public final class CombatManager {
          case "final":
             dragon.setHealth(dragon.getMaxHealth() * 0.2F);
             break;
+         case "cataclysm":
+            dragon.setHealth(dragon.getMaxHealth() * 0.08F);
+            break;
          case "victory":
             VictorySequence.play(world, dragon.getEntityPos());
             return true;

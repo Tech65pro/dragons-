@@ -25,6 +25,15 @@ public final class ModSounds {
    public static final SoundEvent MUSIC_BOSS = register("music_boss", 128.0F);
    public static final SoundEvent MUSIC_FINAL = register("music_final", 128.0F);
    public static final SoundEvent STAGGER = register("stagger", 48.0F);
+   // DragonBrain 3.0 (Abyssal Cataclysm) original sounds.
+   public static final SoundEvent VOID_RIFT_CHARGE = register("void_rift_charge", 64.0F);
+   public static final SoundEvent VOID_RIFT_ERUPT = register("void_rift_erupt", 96.0F);
+   public static final SoundEvent METEOR_WHISTLE = register("meteor_whistle", 64.0F);
+   public static final SoundEvent METEOR_IMPACT = register("meteor_impact", 96.0F);
+   public static final SoundEvent DREAD_ROAR = register("dread_roar", 128.0F);
+   public static final SoundEvent GRAVITY_WELL = register("gravity_well", 64.0F);
+   public static final SoundEvent CATACLYSM_TRANSITION = register("cataclysm_transition", 160.0F);
+   public static final SoundEvent MUSIC_CATACLYSM = register("music_cataclysm", 128.0F);
 
    private ModSounds() {
    }

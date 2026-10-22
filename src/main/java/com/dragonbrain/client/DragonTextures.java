@@ -41,6 +41,11 @@ public final class DragonTextures {
       return state instanceof DragonBrainRenderState dragonState && dragonState.dragonbrain$isFinalPhase();
    }
 
+   private static boolean useCataclysm() {
+      EnderDragonEntityRenderState state = (EnderDragonEntityRenderState)CURRENT.get();
+      return state instanceof DragonBrainRenderState dragonState && dragonState.dragonbrain$isCataclysmPhase();
+   }
+
    private static boolean customEnabled() {
       return ConfigManager.get().customTexture;
    }

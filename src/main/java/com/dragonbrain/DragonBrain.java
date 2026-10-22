@@ -37,6 +37,6 @@ public final class DragonBrain implements ModInitializer {
       ServerTickEvents.END_SERVER_TICK.register(CombatManager::onServerTick);
       ServerLifecycleEvents.SERVER_STOPPED.register((ServerStopped)server -> CombatManager.onServerStopped());
       CommandRegistrationCallback.EVENT.register(DragonBrainCommands::register);
-      LOGGER.info("DragonBrain 2.0 loaded (difficulty={}, enabled={})", config.difficulty, config.enabled);
+      LOGGER.info("DragonBrain 3.0 (Abyssal Cataclysm) loaded (difficulty={}, enabled={})", config.difficulty, config.enabled);
    }
 }

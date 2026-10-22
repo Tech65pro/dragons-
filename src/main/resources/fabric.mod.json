@@ -3,7 +3,7 @@
   "id": "dragonbrain",
   "version": "${version}",
   "name": "DragonBrain",
-  "description": "An intelligent, fair and cinematic Ender Dragon overhaul: state machine driven attacks, real telegraphs, four difficulty modes, new boss mechanics, an original dragon texture and original sound design. Server-authoritative and fully configurable.",
+  "description": "An intelligent, fair and cinematic Ender Dragon overhaul: state machine driven attacks, real telegraphs, four difficulty modes, new boss mechanics, an original dragon texture and original sound design. 3.0 'Abyssal Cataclysm' adds the Void Rift, Meteor Storm, Dread Roar and Gravity Well abilities plus a sub-10% Cataclysm phase with its own texture, roar and boss track. Server-authoritative and fully configurable.",
   "authors": [
     "DragonBrain"
   ],
