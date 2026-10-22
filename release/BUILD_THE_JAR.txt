@@ -1,0 +1,17 @@
+DragonBrain 3.0.0 — Abyssal Cataclysm (Minecraft 1.21.11, Fabric)
+
+This release folder intentionally does NOT contain a prebuilt JAR:
+the development environment had no network route to the Fabric/Mojang
+repositories, so no honest compiled artifact could be produced there
+(see TESTING.md for the full verification report).
+
+To build the mod JAR on any machine with JDK 21+ and internet access:
+
+    ./gradlew clean build
+
+Output:  build/libs/dragonbrain-3.0.0.jar
+Requires (in your mods folder): Fabric Loader >= 0.19.5 and
+Fabric API >= 0.141.6+1.21.11 for Minecraft 1.21.11.
+
+dragonbrain-3.0.0-source.zip in this folder is a snapshot of the exact
+source tree (same content as the repository at the release commit).
