@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "dragonbrain:abyssal_alloy_block",
+    "dragonbrain:abyssal_trophy",
+    "dragonbrain:astral_crystal_block",
+    "dragonbrain:astral_dust_block",
+    "dragonbrain:chorus_bark_log",
+    "dragonbrain:cracked_endstone_bricks",
+    "dragonbrain:eclipse_lantern",
+    "dragonbrain:endstone_rubble",
+    "dragonbrain:engraved_abyssal_bricks",
+    "dragonbrain:fossil_block",
+    "dragonbrain:fractured_end_stone",
+    "dragonbrain:petrified_stone",
+    "dragonbrain:shattered_pillar",
+    "dragonbrain:starshale",
+    "dragonbrain:voidglass",
+    "dragonbrain:weathered_masonry",
+    "dragonbrain:wild_chorus_bulb"
+  ]
+}

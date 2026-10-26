@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "dragonbrain:block/astral_dust_block"
+    }
+  }
+}

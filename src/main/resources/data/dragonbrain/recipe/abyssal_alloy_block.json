@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building_blocks",
+  "pattern": [
+    "III",
+    "III",
+    "III"
+  ],
+  "key": {
+    "I": {
+      "item": "dragonbrain:abyssal_alloy_ingot"
+    }
+  },
+  "result": {
+    "id": "dragonbrain:abyssal_alloy_block",
+    "count": 1
+  }
+}

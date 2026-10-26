@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building_blocks",
+  "pattern": [
+    "SS",
+    "SS"
+  ],
+  "key": {
+    "S": {
+      "item": "dragonbrain:voidglass_shard"
+    }
+  },
+  "result": {
+    "id": "dragonbrain:voidglass",
+    "count": 1
+  }
+}

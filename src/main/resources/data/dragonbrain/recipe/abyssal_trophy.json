@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "decorations",
+  "pattern": [
+    " S ",
+    "ABA",
+    "BBB"
+  ],
+  "key": {
+    "S": {
+      "item": "dragonbrain:cataclysm_scale"
+    },
+    "A": {
+      "item": "dragonbrain:abyssal_alloy_ingot"
+    },
+    "B": {
+      "item": "dragonbrain:engraved_abyssal_bricks"
+    }
+  },
+  "result": {
+    "id": "dragonbrain:abyssal_trophy",
+    "count": 1
+  }
+}

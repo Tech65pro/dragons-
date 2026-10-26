@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building_blocks",
+  "pattern": [
+    "EE",
+    "EE"
+  ],
+  "key": {
+    "E": {
+      "item": "dragonbrain:endstone_rubble"
+    }
+  },
+  "result": {
+    "id": "dragonbrain:fractured_end_stone",
+    "count": 4
+  }
+}
