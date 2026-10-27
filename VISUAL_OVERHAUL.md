@@ -105,8 +105,14 @@ with its own `pack.mcmeta` (**pack_format 75** — verified for 1.21.11),
 - `/dragonbrain status assets` — live registry counts per asset group.
 - `/dragonbrain test assets` — real registry presence checks with
   explicit scope note; never prints success unless checks pass.
-- Gradle build / in-game render: **not run** (offline sandbox — see
-  `BUILD_NOTES.md` for exactly why and the first-build checklist).
+- Gradle build + in-game runtime: **verified in GitHub Actions**
+  (2026-10-27): `build` compiles and packages; `server-smoke` boots a
+  real dedicated server and passes 10/10 RCON assertions (registries
+  22/22 blocks, 33/33 items, 90/90 asset check, all 3 summons, block
+  placement, clean log); `client-smoke` boots the dev client under
+  Xvfb to a created block atlas with zero model/texture/mixin errors.
+  See `BUILD_NOTES.md`. (Sandbox-local Gradle remains impossible:
+  Fabric/Mojang Maven are outside its network allowlist, hence CI.)
 
 ## I. Delivery lists
 1. **Preserved**: 15 × 2.0 `.ogg` (bit-for-bit), dragon UV/eye masks,
@@ -126,8 +132,10 @@ with its own `pack.mcmeta` (**pack_format 75** — verified for 1.21.11),
    (none existed in 2.0).
 6. **Resource pack requirements**: optional only; format 75; install in
    `resourcepacks/`; no dependencies.
-7. **Build/validation**: validator PASS (above); Gradle build not
-   executable in sandbox (Maven hosts blocked) — `BUILD_NOTES.md`.
-   Verified artifacts: source tree at repo root;
-   `build/libs/DragonBrain-AbyssalEnd-Vanilla.zip` (26,238 bytes,
-   19 entries, zip-tested clean, sha256 `360919812d3bea9d…`).
+7. **Build/validation**: validator PASS (442 checks, also enforced in
+   CI via `check`); Gradle build, dedicated-server smoke test and
+   headless-client smoke test all **green in GitHub Actions**
+   (2026-10-27). Verified artifacts: Actions artifact
+   `DragonBrain-3.0` (mod jar `dragonbrain-3.0.0.jar` + sources +
+   `DragonBrain-AbyssalEnd-Vanilla.zip`, ~4.2 MB total) on the latest
+   `build` workflow run; full logs mirrored on the `ci-logs` branch.

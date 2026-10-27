@@ -37,11 +37,10 @@ Third-party packs *Beyonder - End Tweaks* (MIT) and *Fancy End*
 their authors on Modrinth; they are **not** included here.
 
 ## Building
-See `BUILD_NOTES.md` — **read it first**. This checkout was produced in
-an offline sandbox where Fabric/Mojang Maven hosts are unreachable, so
-the Gradle build itself could not run here; the notes list exactly
-what was verified instead (asset validation: 441 checks green) and the
-short first-build checklist for a networked machine.
+`./gradlew build` (see `BUILD_NOTES.md`). CI is green end-to-end:
+compile + asset validation, a dedicated-server RCON smoke test, and a
+headless-client resource-load test. The built jar is attached to every
+Actions run as the `DragonBrain-3.0` artifact.
 
 ## Regenerating assets
 ```
