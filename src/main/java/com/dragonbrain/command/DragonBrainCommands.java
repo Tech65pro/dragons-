@@ -158,18 +158,14 @@ public final class DragonBrainCommands {
                 return testAssets(source);
             }
             case "phase_transition" -> {
-                world.playSound(null, source.getPlayer() != null
-                                ? source.getPlayer().getBlockPos()
-                                : world.getSpawnPos(),
+                world.playSound(null, net.minecraft.util.math.BlockPos.ofFloored(source.getPosition()),
                         ModSounds.DRAGON_ABYSSAL_TRANSITION, SoundCategory.HOSTILE, 0.8f, 1.0f);
                 source.sendFeedback(() -> Text.literal(
                         "Played dragon_abyssal_transition (phase feedback test)"), false);
                 return 1;
             }
             case "discovery" -> {
-                world.playSound(null, source.getPlayer() != null
-                                ? source.getPlayer().getBlockPos()
-                                : world.getSpawnPos(),
+                world.playSound(null, net.minecraft.util.math.BlockPos.ofFloored(source.getPosition()),
                         ModSounds.DISCOVERY_CHIME, SoundCategory.PLAYERS, 0.7f, 1.0f);
                 source.sendFeedback(() -> Text.literal("Played discovery_chime"), false);
                 return 1;

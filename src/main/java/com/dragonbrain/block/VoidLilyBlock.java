@@ -1,5 +1,6 @@
 package com.dragonbrain.block;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -19,6 +20,7 @@ import com.dragonbrain.registry.ModBlocks;
 
 /** Luminous Void Gardens plant. Grows on End Stone and Lumen Moss. */
 public class VoidLilyBlock extends PlantBlock {
+    public static final MapCodec<VoidLilyBlock> CODEC = createCodec(VoidLilyBlock::new);
     private static final VoxelShape SHAPE = Block.createCuboidShape(4, 0, 4, 12, 13, 12);
 
     public VoidLilyBlock(Settings settings) {
@@ -56,5 +58,9 @@ public class VoidLilyBlock extends PlantBlock {
     protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
         BlockPos below = pos.offset(Direction.DOWN);
         return canPlantOnTop(world.getBlockState(below), world, below);
+    }
+    @Override
+    public MapCodec<VoidLilyBlock> getCodec() {
+        return CODEC;
     }
 }

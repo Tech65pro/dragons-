@@ -43,8 +43,7 @@ public class EndWispEntity extends MobEntity {
     @Override
     protected EntityNavigation createNavigation(World world) {
         BirdNavigation navigation = new BirdNavigation(this, world);
-        navigation.setCanPathThroughDoors(false);
-        navigation.setCanEnterOpenDoors(false);
+        navigation.setCanOpenDoors(false);
         navigation.setCanSwim(false);
         return navigation;
     }

@@ -1,5 +1,6 @@
 package com.dragonbrain.block;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
@@ -25,6 +26,7 @@ import com.dragonbrain.registry.ModSounds;
  * burst (also used as the "discovery" feedback at ruins/vaults).
  */
 public class EclipseLanternBlock extends Block {
+    public static final MapCodec<EclipseLanternBlock> CODEC = createCodec(EclipseLanternBlock::new);
     private static final VoxelShape SHAPE = VoxelShapes.union(
             Block.createCuboidShape(5, 0, 5, 11, 11, 11),
             Block.createCuboidShape(7, 11, 7, 9, 13, 9));
@@ -71,5 +73,9 @@ public class EclipseLanternBlock extends Block {
                 pos.getY() + 0.4 + random.nextDouble() * 0.4,
                 pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.6,
                 0.0, 0.015, 0.0);
+    }
+    @Override
+    public MapCodec<EclipseLanternBlock> getCodec() {
+        return CODEC;
     }
 }

@@ -1,5 +1,6 @@
 package com.dragonbrain.block;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -15,6 +16,7 @@ import com.dragonbrain.registry.ModBlocks;
 
 /** Decorative chorus root growth for the Chorus Wilds. */
 public class ChorusRootsBlock extends PlantBlock {
+    public static final MapCodec<ChorusRootsBlock> CODEC = createCodec(ChorusRootsBlock::new);
     private static final VoxelShape SHAPE = Block.createCuboidShape(3, 0, 3, 13, 11, 13);
 
     public ChorusRootsBlock(Settings settings) {
@@ -39,5 +41,9 @@ public class ChorusRootsBlock extends PlantBlock {
     protected boolean canPlaceAt(BlockState state, WorldView world, BlockPos pos) {
         BlockPos below = pos.offset(Direction.DOWN);
         return canPlantOnTop(world.getBlockState(below), world, below);
+    }
+    @Override
+    public MapCodec<ChorusRootsBlock> getCodec() {
+        return CODEC;
     }
 }
