@@ -64,7 +64,11 @@ jobs:
         run: |
           ./gradlew runServer --console=plain --args="--nogui" > server.log 2>&1 &
           SERVER_PID=$!
-          python3 tools/ci_server_smoke.py dragonbrain-smoke 25575 900
+          set -o pipefail
+          python3 -u tools/ci_server_smoke.py dragonbrain-smoke 25575 900 2>&1 | tee smoke.log
+          # mirror the transcript into annotations so it is readable via the API
+          grep -E "^(PASS|FAIL|RCON|auth|stop|SMOKE|>)" smoke.log | head -40 | while IFS= read -r line; do echo "::notice::SMOKE $line"; done
+          grep -E "^(FAIL|SMOKE FAILED)" smoke.log | head -20 | while IFS= read -r line; do echo "::error::SMOKE $line"; done
           SMOKE=$?
           wait $SERVER_PID || true
           echo "----- server log (errors) -----"

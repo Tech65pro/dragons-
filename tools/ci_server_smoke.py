@@ -45,17 +45,35 @@ def read_packet(sock):
 class Rcon:
     def __init__(self, host, port, password):
         self.sock = socket.create_connection((host, port), timeout=30)
-        self.next_id = 1
-        self.sock.sendall(packet(1, 3, password))
-        req_id, _t, _p = read_packet(self.sock)
-        if req_id == -1:
-            raise ConnectionError("RCON authentication failed")
+        self.sock.settimeout(30)
+        self.next_id = 100
+        self.sock.sendall(packet(100, 3, password))
+        # Vanilla sends an empty RESPONSE_VALUE packet before AUTH_RESPONSE;
+        # read until we see the type-2 packet for our id.
+        for _ in range(5):
+            req_id, ptype, _p = read_packet(self.sock)
+            print(f"auth reply: id={req_id} type={ptype}", flush=True)
+            if req_id == -1:
+                raise ConnectionError("RCON authentication failed")
+            if ptype == 2 and req_id == 100:
+                break
+        else:
+            raise ConnectionError("no RCON auth response")
 
     def cmd(self, command):
         self.next_id += 1
-        self.sock.sendall(packet(self.next_id, 2, command))
-        _id, _t, payload = read_packet(self.sock)
-        return payload.strip()
+        want = self.next_id
+        self.sock.sendall(packet(want, 2, command))
+        out = []
+        for _ in range(10):
+            req_id, _t, payload = read_packet(self.sock)
+            if req_id == want:
+                out.append(payload)
+                break
+            print(f"skipping stray packet id={req_id}", flush=True)
+        result = "".join(out).strip()
+        print(f"> {command}\n< {result}", flush=True)
+        return result
 
 
 def wait_for_rcon(deadline):
