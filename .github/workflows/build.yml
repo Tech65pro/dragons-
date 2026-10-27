@@ -111,3 +111,53 @@ jobs:
         with:
           name: server-smoke-log
           path: server.log
+
+  client-smoke:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: install virtual display + GL
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri libasound2t64 > /dev/null
+      - name: boot dev client headlessly and scan for resource errors
+        run: |
+          set +e
+          chmod +x ./gradlew
+          timeout 540 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient --console=plain > client.log 2>&1 &
+          CLIENT_PID=$!
+          BOOTED=0
+          for i in $(seq 1 40); do
+            sleep 12
+            if grep -qE "Created: [0-9]+x[0-9]+x[0-9]+ minecraft:textures/atlas/blocks|Sound engine started|Backend library: LWJGL|Narrator library" client.log 2>/dev/null; then BOOTED=1; break; fi
+            kill -0 $CLIENT_PID 2>/dev/null || break
+          done
+          echo "booted=$BOOTED"
+          grep -inE "dragonbrain" client.log | grep -iE "error|missing|fail|exception|warn" | head -30 > client-errors.txt || true
+          grep -inE "Unable to load model|Missing texture|Failed to load|mixin.*(fail|error)" client.log | head -30 >> client-errors.txt || true
+          pkill -f "Minecraft" 2>/dev/null; kill $CLIENT_PID 2>/dev/null; wait $CLIENT_PID 2>/dev/null
+          echo "----- dragonbrain-relevant client errors -----"; cat client-errors.txt
+          echo "----- client log tail -----"; tail -30 client.log
+          if [ "$BOOTED" != "1" ]; then echo "::error::client never reached resource loading"; exit 2; fi
+          if [ -s client-errors.txt ]; then echo "::error::client resource errors found"; exit 1; fi
+          echo "CLIENT SMOKE PASSED"
+      - name: publish client log to ci-logs branch
+        if: always()
+        run: |
+          git config user.name "dragonbrain-ci"
+          git config user.email "ci@dragonbrain.invalid"
+          git fetch origin ci-logs || true
+          git checkout -B ci-logs-tmp origin/ci-logs 2>/dev/null || git checkout --orphan ci-logs-tmp
+          mkdir -p logs
+          cp client.log logs/client.log 2>/dev/null || true
+          git add logs/client.log 2>/dev/null || true
+          git commit -q -m "client log run ${{ github.run_id }}" || exit 0
+          git push -f origin ci-logs-tmp:ci-logs
