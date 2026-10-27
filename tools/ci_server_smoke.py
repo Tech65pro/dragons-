@@ -99,7 +99,7 @@ def main():
     print("RCON connected")
 
     out = rcon.cmd("dragonbrain status assets")
-    check("status assets reports blocks", "blocks:" in out and "22" in out, out.splitlines()[1] if out else out)
+    check("status assets reports blocks", "blocks:" in out and "22" in out)
     check("status assets reports sounds", "sound events:" in out and "30" in out)
 
     out = rcon.cmd("dragonbrain test assets")

@@ -250,7 +250,7 @@ def main():
         w(f"{D}/{MOD}/recipe/{rid}.json",
           {"type": "minecraft:crafting_shaped", "category": category,
            "pattern": pattern,
-           "key": {k: {"item": v} for k, v in key.items()},
+           "key": dict(key),  # 1.21.11: ingredients are plain strings / #tags / arrays
            "result": {"id": result, "count": count}})
     shaped("voidglass", ["SS", "SS"], {"S": f"{MOD}:voidglass_shard"},
            f"{MOD}:voidglass", category="building_blocks")
@@ -259,7 +259,7 @@ def main():
            category="building_blocks")
     w(f"{D}/{MOD}/recipe/abyssal_alloy_ingot_from_block.json",
       {"type": "minecraft:crafting_shapeless", "category": "misc",
-       "ingredients": [{"item": f"{MOD}:abyssal_alloy_block"}],
+       "ingredients": [f"{MOD}:abyssal_alloy_block"],
        "result": {"id": f"{MOD}:abyssal_alloy_ingot", "count": 9}})
     shaped("abyssal_alloy_ingot", [" R ", "IPI", " R "],
            {"R": f"{MOD}:resonance_shard", "I": "minecraft:iron_ingot",

@@ -6,9 +6,7 @@
     "EE"
   ],
   "key": {
-    "E": {
-      "item": "minecraft:end_stone_bricks"
-    }
+    "E": "minecraft:end_stone_bricks"
   },
   "result": {
     "id": "dragonbrain:cracked_endstone_bricks",

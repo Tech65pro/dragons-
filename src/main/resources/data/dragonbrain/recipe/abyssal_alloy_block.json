@@ -7,9 +7,7 @@
     "III"
   ],
   "key": {
-    "I": {
-      "item": "dragonbrain:abyssal_alloy_ingot"
-    }
+    "I": "dragonbrain:abyssal_alloy_ingot"
   },
   "result": {
     "id": "dragonbrain:abyssal_alloy_block",

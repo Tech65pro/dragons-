@@ -7,15 +7,9 @@
     "BBB"
   ],
   "key": {
-    "S": {
-      "item": "dragonbrain:cataclysm_scale"
-    },
-    "A": {
-      "item": "dragonbrain:abyssal_alloy_ingot"
-    },
-    "B": {
-      "item": "dragonbrain:engraved_abyssal_bricks"
-    }
+    "S": "dragonbrain:cataclysm_scale",
+    "A": "dragonbrain:abyssal_alloy_ingot",
+    "B": "dragonbrain:engraved_abyssal_bricks"
   },
   "result": {
     "id": "dragonbrain:abyssal_trophy",

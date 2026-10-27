@@ -2,9 +2,7 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    {
-      "item": "dragonbrain:abyssal_alloy_block"
-    }
+    "dragonbrain:abyssal_alloy_block"
   ],
   "result": {
     "id": "dragonbrain:abyssal_alloy_ingot",
