@@ -29,3 +29,50 @@ jobs:
         with:
           name: DragonBrain-3.0
           path: build/libs/
+
+  server-smoke:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: prepare dev server (eula + rcon)
+        run: |
+          chmod +x ./gradlew
+          mkdir -p run
+          echo "eula=true" > run/eula.txt
+          cat > run/server.properties <<'PROPS'
+          enable-rcon=true
+          rcon.password=dragonbrain-smoke
+          rcon.port=25575
+          online-mode=false
+          level-type=minecraft:superflat
+          spawn-protection=0
+          max-tick-time=0
+          PROPS
+      - name: boot server and run RCON smoke test
+        run: |
+          ./gradlew runServer --console=plain --args="--nogui" > server.log 2>&1 &
+          SERVER_PID=$!
+          python3 tools/ci_server_smoke.py dragonbrain-smoke 25575 900
+          SMOKE=$?
+          wait $SERVER_PID || true
+          echo "----- server log (errors) -----"
+          grep -iE "error|exception|failed" server.log | grep -viE "rcon|eula" | head -40 || true
+          exit $SMOKE
+      - name: upload server log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-smoke-log
+          path: server.log
