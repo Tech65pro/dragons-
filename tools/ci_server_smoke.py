@@ -110,6 +110,8 @@ def main():
         out = rcon.cmd(f"summon dragonbrain:{entity} 0 100 0")
         check(f"summon {entity}", label in out, out)
 
+    rcon.cmd("forceload add 0 0")
+    time.sleep(2)
     for block in ("eclipse_lantern", "engraved_abyssal_bricks", "voidglass"):
         out = rcon.cmd(f"setblock 0 99 0 dragonbrain:{block}")
         check(f"setblock {block}", "Changed the block" in out, out)
