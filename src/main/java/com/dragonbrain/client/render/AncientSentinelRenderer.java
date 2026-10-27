@@ -28,8 +28,8 @@ public class AncientSentinelRenderer
     public void updateRenderState(AncientSentinelEntity entity, AncientSentinelRenderState state,
                                   float tickDelta) {
         super.updateRenderState(entity, state, tickDelta);
-        state.walkPos = entity.limbAnimator.getPos(tickDelta);
-        state.walkSpeed = entity.limbAnimator.getSpeed(tickDelta);
+        state.walkPos = entity.limbAnimator.getAnimationProgress(tickDelta);
+        state.walkSpeed = entity.limbAnimator.getSpeed();
         state.handSwingProgress = entity.getHandSwingProgress(tickDelta);
         state.guarding = entity.isGuarding();
         state.awakened = entity.isAwakened();

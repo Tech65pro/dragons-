@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version loom_version
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
     id 'maven-publish'
 }
 
@@ -8,6 +8,14 @@ group = project.maven_group
 base { archivesName = project.archives_base_name }
 
 repositories { mavenCentral() }
+
+loom {
+    mods {
+        "dragonbrain" {
+            sourceSet sourceSets.main
+        }
+    }
+}
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"

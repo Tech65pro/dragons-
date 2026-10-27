@@ -66,7 +66,7 @@ public class EclipseLanternBlock extends Block {
         if (!ConfigManager.get().ambientParticles || random.nextInt(9) != 0) {
             return;
         }
-        world.addParticleClient(ModParticles.VOID_MOTE,
+        world.addParticleClient(ModParticles.VOID_MOTE, false, false,
                 pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.6,
                 pos.getY() + 0.4 + random.nextDouble() * 0.4,
                 pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.6,

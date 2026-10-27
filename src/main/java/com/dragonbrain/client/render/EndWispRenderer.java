@@ -1,6 +1,7 @@
 package com.dragonbrain.client.render;
 
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.MobEntityRenderer;
 import net.minecraft.client.render.entity.feature.EyesFeatureRenderer;
@@ -45,7 +46,7 @@ public class EndWispRenderer extends MobEntityRenderer<EndWispEntity, EndWispRen
 
         EyesFeature(FeatureRendererContext<S, M> context, Identifier texture) {
             super(context);
-            this.layer = RenderLayer.getEyes(texture);
+            this.layer = RenderLayers.eyes(texture);
         }
 
         @Override

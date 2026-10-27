@@ -1,6 +1,6 @@
 package com.dragonbrain.mixin.client;
 
-import net.minecraft.client.render.entity.state.EnderDragonRenderState;
+import net.minecraft.client.render.entity.state.EnderDragonEntityRenderState;
 
 import com.dragonbrain.client.DragonBrainRenderStateAccess;
 import com.dragonbrain.core.BossPhase;
@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.Unique;
  * Carries the DragonBrain boss phase on the vanilla dragon render state.
  * Mirrors the 2.0 design (EnderDragonRenderStateMixin existed in 2.0).
  */
-@Mixin(EnderDragonRenderState.class)
+@Mixin(EnderDragonEntityRenderState.class)
 public abstract class EnderDragonRenderStateMixin implements DragonBrainRenderStateAccess {
     @Unique
     private BossPhase dragonbrain$phase = BossPhase.NORMAL;

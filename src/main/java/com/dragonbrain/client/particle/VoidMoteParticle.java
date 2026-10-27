@@ -1,18 +1,17 @@
 package com.dragonbrain.client.particle;
 
-import net.minecraft.client.particle.ParticleTextureSheet;
-import net.minecraft.client.particle.SpriteBillboardParticle;
+import net.minecraft.client.particle.BillboardParticle;
+import net.minecraft.client.particle.ParticleFactory;
 import net.minecraft.client.particle.SpriteProvider;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.SimpleParticleType;
 import net.minecraft.util.math.random.Random;
 
 /** Slow drifting cyan mote — ambient magic/atmosphere. */
-public class VoidMoteParticle extends SpriteBillboardParticle {
+public class VoidMoteParticle extends BillboardParticle {
     protected VoidMoteParticle(ClientWorld world, double x, double y, double z,
                                double vx, double vy, double vz, SpriteProvider sprites, Random random) {
-        super(world, x, y, z);
-        setSprite(sprites.getSprite(random));
+        super(world, x, y, z, vx, vy, vz, sprites.getSprite(random));
         this.velocityX = vx;
         this.velocityY = vy;
         this.velocityZ = vz;
@@ -21,8 +20,7 @@ public class VoidMoteParticle extends SpriteBillboardParticle {
         this.alpha = 0.85f;
     }
 
-    public static net.minecraft.client.particle.ParticleFactory<SimpleParticleType> factory(
-            SpriteProvider sprites) {
+    public static ParticleFactory<SimpleParticleType> factory(SpriteProvider sprites) {
         return (parameters, world, x, y, z, vx, vy, vz, random) ->
                 new VoidMoteParticle(world, x, y, z, vx, vy, vz, sprites, random);
     }
@@ -34,7 +32,7 @@ public class VoidMoteParticle extends SpriteBillboardParticle {
     }
 
     @Override
-    public ParticleTextureSheet getType() {
-        return ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT;
+    public RenderType getRenderType() {
+        return RenderType.PARTICLE_ATLAS_TRANSLUCENT;
     }
 }

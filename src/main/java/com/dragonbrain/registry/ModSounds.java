@@ -62,7 +62,7 @@ public final class ModSounds {
     }
 
     private static SoundEvent register(String name, int range) {
-        SoundEvent event = SoundEvent.ofVariableRangeEvent(DragonBrain.id(name), range);
+        SoundEvent event = SoundEvent.of(DragonBrain.id(name), (float) range);
         REGISTERED.add(event);
         return Registry.register(Registries.SOUND_EVENT, DragonBrain.id(name), event);
     }

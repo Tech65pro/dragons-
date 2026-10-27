@@ -5,6 +5,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.EntityType;
+import net.minecraft.command.DefaultPermissions;
+import net.minecraft.command.permission.PermissionCheck;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -37,6 +39,13 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
  * </ul>
  */
 public final class DragonBrainCommands {
+    /** Operator gate (gamemasters, classic level 2). 1.21.11 replaced
+     *  hasPermissionLevel with the PermissionCheck system; this matches
+     *  the pattern DragonBrain 2.0 shipped (PermissionCheck.Require of
+     *  DefaultPermissions.GAMEMASTERS). */
+    private static final PermissionCheck OP_CHECK =
+            new PermissionCheck.Require(DefaultPermissions.GAMEMASTERS);
+
     private DragonBrainCommands() {
     }
 
@@ -48,7 +57,7 @@ public final class DragonBrainCommands {
                                  CommandRegistryAccess registryAccess,
                                  CommandManager.RegistrationEnvironment environment) {
         dispatcher.register(CommandManager.literal("dragonbrain")
-                .requires(source -> source.hasPermissionLevel(2))
+                .requires(CommandManager.requirePermissionLevel(OP_CHECK))
                 .executes(ctx -> help(ctx.getSource()))
                 .then(CommandManager.literal("help").executes(ctx -> help(ctx.getSource())))
                 .then(CommandManager.literal("status")

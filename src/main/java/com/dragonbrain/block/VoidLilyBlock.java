@@ -45,7 +45,7 @@ public class VoidLilyBlock extends PlantBlock {
             return;
         }
         // Restrained glow: one slow mote occasionally, never a particle storm.
-        world.addParticleClient(ParticleTypes.END_ROD,
+        world.addParticleClient(ParticleTypes.END_ROD, false, false,
                 pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.3,
                 pos.getY() + 0.7,
                 pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.3,

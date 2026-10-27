@@ -1,6 +1,8 @@
 package com.dragonbrain.client;
 
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.render.BlockRenderLayer;
+import net.minecraft.client.render.BlockRenderLayers;
 
 import com.dragonbrain.client.model.AncientSentinelModel;
 import com.dragonbrain.client.model.EndWispModel;
@@ -15,7 +17,7 @@ import com.dragonbrain.registry.ModEntities;
 import com.dragonbrain.registry.ModParticles;
 
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.fabricmc.fabric.api.client.rendering.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
@@ -44,9 +46,14 @@ public class DragonBrainClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.RESONANCE_SPARK,
                 ResonanceSparkParticle::factory);
 
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.VOID_LILY, RenderLayer.getCutout());
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHORUS_ROOTS, RenderLayer.getCutout());
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.CHORUS_CANOPY, RenderLayer.getCutoutMipped());
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.VOIDGLASS, RenderLayer.getTranslucent());
+        // Yarn 1.21.11 does not yet expose named ChunkSectionLayer/BlockRenderLayer
+        // constants, so read the exact vanilla layer instances from representative
+        // vanilla blocks: short grass uses the cutout layer, glass the translucent one.
+        BlockRenderLayer cutout = BlockRenderLayers.getBlockLayer(Blocks.SHORT_GRASS.getDefaultState());
+        BlockRenderLayer translucent = BlockRenderLayers.getBlockLayer(Blocks.GLASS.getDefaultState());
+        BlockRenderLayerMap.putBlock(ModBlocks.VOID_LILY, cutout);
+        BlockRenderLayerMap.putBlock(ModBlocks.CHORUS_ROOTS, cutout);
+        BlockRenderLayerMap.putBlock(ModBlocks.CHORUS_CANOPY, cutout);
+        BlockRenderLayerMap.putBlock(ModBlocks.VOIDGLASS, translucent);
     }
 }
