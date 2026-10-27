@@ -33,7 +33,7 @@ jobs:
   server-smoke:
     needs: build
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 20
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
@@ -63,20 +63,31 @@ jobs:
       - name: boot server and run RCON smoke test
         run: |
           set +e
+          # seed both candidate run dirs (loom default is run/)
+          for d in run run/server; do
+            mkdir -p $d
+            echo "eula=true" > $d/eula.txt
+            cp run/server.properties $d/server.properties 2>/dev/null || true
+          done
           ./gradlew runServer --console=plain --args="--nogui" > server.log 2>&1 &
           SERVER_PID=$!
-          python3 -u tools/ci_server_smoke.py dragonbrain-smoke 25575 900 > smoke.log 2>&1
+          ( for i in $(seq 1 48); do
+              sleep 15
+              grep -hE "Done \(|RCON running|Starting minecraft server|EULA|FAILED|Exception in|ERROR" server.log 2>/dev/null | tail -2 | while IFS= read -r l; do echo "::notice::BOOT $l"; done
+              ss -ltn 2>/dev/null | grep -E "25565|25575" | while IFS= read -r l; do echo "::notice::PORT $l"; done
+            done ) &
+          WATCH_PID=$!
+          timeout 660 python3 -u tools/ci_server_smoke.py dragonbrain-smoke 25575 600 > smoke.log 2>&1
           SMOKE=$?
-          wait $SERVER_PID
-          SERVER_EXIT=$?
-          echo "smoke_exit=$SMOKE server_exit=$SERVER_EXIT"
-          echo "----- smoke transcript -----"
-          cat smoke.log
-          echo "----- server log tail -----"
-          tail -60 server.log
-          # mirror key lines into annotations (readable via the GitHub API)
+          kill $WATCH_PID 2>/dev/null
+          timeout 45 tail --pid=$SERVER_PID -f /dev/null || kill $SERVER_PID 2>/dev/null
+          wait $SERVER_PID 2>/dev/null
+          echo "smoke_exit=$SMOKE"
+          echo "----- smoke transcript -----"; cat smoke.log
+          echo "----- server log tail -----"; tail -40 server.log
+          echo "----- where did the server run? -----"; find . -maxdepth 3 -name "eula.txt" -o -maxdepth 3 -name "server.properties" | head
           head -40 smoke.log | while IFS= read -r line; do echo "::notice::SMOKE $line"; done
-          grep -iE "error|exception|caused by|FATAL" server.log | grep -viE "rcon" | head -15 | while IFS= read -r line; do echo "::error::SERVER $line"; done
+          grep -iE "error|exception|caused by" server.log | grep -viE "rcon" | head -10 | while IFS= read -r line; do echo "::error::SERVER $line"; done
           exit $SMOKE
       - name: upload server log
         if: always()
