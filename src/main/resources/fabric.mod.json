@@ -4,13 +4,19 @@
   "version": "${version}",
   "name": "DragonBrain",
   "description": "An intelligent, fair and cinematic Ender Dragon overhaul with a complete original End visual identity: five biome material sets, three new creatures (End Wisp, Rift Stalker, Ancient Sentinel), the Abyssal Cataclysm dragon, original textures, models, particles and sound design.",
-  "authors": ["DragonBrain"],
+  "authors": [
+    "DragonBrain"
+  ],
   "license": "MIT",
   "icon": "assets/dragonbrain/icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": ["com.dragonbrain.DragonBrain"],
-    "client": ["com.dragonbrain.client.DragonBrainClient"]
+    "main": [
+      "com.dragonbrain.DragonBrain"
+    ],
+    "client": [
+      "com.dragonbrain.client.DragonBrainClient"
+    ]
   },
   "mixins": [
     {
@@ -24,11 +30,7 @@
     "minecraft": "1.21.11",
     "java": ">=21"
   },
-  "recommends": {
-    "beyonder-end-tweaks": "*",
-    "fancy-end": "*"
-  },
   "custom": {
-    "dragonbrain:optional_resource_packs": "See CREDITS.md — Beyonder - End Tweaks (MIT) and Fancy End (CC-BY-NC-ND-4.0) are independent third-party packs; install them from their authors. DragonBrain bundles no third-party textures."
+    "dragonbrain:optional_resource_packs": "See CREDITS.md \u2014 Beyonder - End Tweaks (MIT) and Fancy End (CC-BY-NC-ND-4.0) are independent third-party packs; install them from their authors. DragonBrain bundles no third-party textures."
   }
 }
