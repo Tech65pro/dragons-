@@ -1,4 +1,6 @@
 name: build
+permissions:
+  contents: write
 on: [pull_request, push, workflow_dispatch]
 
 jobs:
@@ -73,8 +75,8 @@ jobs:
           SERVER_PID=$!
           ( for i in $(seq 1 48); do
               sleep 15
-              grep -hE "Done \(|RCON running|Starting minecraft server|EULA|FAILED|Exception in|ERROR" server.log 2>/dev/null | tail -2 | while IFS= read -r l; do echo "::notice::BOOT $l"; done
-              ss -ltn 2>/dev/null | grep -E "25565|25575" | while IFS= read -r l; do echo "::notice::PORT $l"; done
+              grep -hE "Done \(|RCON running|Starting minecraft server|EULA|FAILED|Exception in|ERROR" server.log 2>/dev/null | tail -1 > .bootline
+              if ! cmp -s .bootline .bootline.prev 2>/dev/null; then cp .bootline .bootline.prev; while IFS= read -r l; do echo "::notice::BOOT $l"; done < .bootline; fi
             done ) &
           WATCH_PID=$!
           timeout 660 python3 -u tools/ci_server_smoke.py dragonbrain-smoke 25575 600 > smoke.log 2>&1
@@ -89,6 +91,20 @@ jobs:
           head -40 smoke.log | while IFS= read -r line; do echo "::notice::SMOKE $line"; done
           grep -iE "error|exception|caused by" server.log | grep -viE "rcon" | head -10 | while IFS= read -r line; do echo "::error::SERVER $line"; done
           exit $SMOKE
+      - name: publish logs to ci-logs branch
+        if: always()
+        run: |
+          git config user.name "dragonbrain-ci"
+          git config user.email "ci@dragonbrain.invalid"
+          mkdir -p /tmp/ci-logs
+          cp smoke.log server.log /tmp/ci-logs/ 2>/dev/null || true
+          find run -path "*crash-reports*" -name "*.txt" 2>/dev/null | head -3 | while read -r f; do cp "$f" /tmp/ci-logs/; done
+          git checkout --orphan ci-logs-tmp
+          git rm -rf --quiet . 2>/dev/null || true
+          mkdir -p logs && cp /tmp/ci-logs/* logs/ 2>/dev/null || true
+          git add logs
+          git commit -q -m "smoke logs run ${{ github.run_id }}" || exit 0
+          git push -f origin ci-logs-tmp:ci-logs
       - name: upload server log
         if: always()
         uses: actions/upload-artifact@v7
