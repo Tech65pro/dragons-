@@ -371,7 +371,7 @@ public final class DragonCombatController {
         state.current = attack;
         state.attackTicks = 0;
         state.targetUuid = target.getUuid();
-        state.snapshotPos = target.getPos();
+        state.snapshotPos = target.getEntityPos();
         state.secondPulsePending = state.phase == BossPhase.FINAL && attack == Attack.VOID_PULSE;
         state.channelCrystal = null;
         switch (attack) {
@@ -388,7 +388,7 @@ public final class DragonCombatController {
             }
             case VOID_PULSE -> {
                 play(config, world, dragon.getBlockPos(), ModSounds.VOID_PULSE, 0.8f);
-                ringParticles(world, dragon.getPos(), 6.0, 20);
+                ringParticles(world, dragon.getEntityPos(), 6.0, 20);
             }
             case CRYSTAL_OVERCHARGE -> {
                 state.channelCrystal = findCrystal(world, dragon);
@@ -421,13 +421,13 @@ public final class DragonCombatController {
                 && state.attackTicks % 6 == 0) {
             ringParticles(world, state.snapshotPos, 6.0, 10);
         } else if (state.current == Attack.VOID_PULSE && state.attackTicks % 5 == 0) {
-            ringParticles(world, dragon.getPos(), 4.0 + state.attackTicks * 0.35, 14);
+            ringParticles(world, dragon.getEntityPos(), 4.0 + state.attackTicks * 0.35, 14);
         } else if (state.current == Attack.CRYSTAL_OVERCHARGE) {
             if (state.channelCrystal == null || !state.channelCrystal.isAlive()) {
                 finishAttack(state, tuning, true); // channel broken: long recovery, no payoff
                 return;
             }
-            beamParticles(world, dragon.getEyePos(), state.channelCrystal.getPos().add(0, 1.2, 0));
+            beamParticles(world, dragon.getEyePos(), state.channelCrystal.getEyePos().add(0, 1.2, 0));
         }
         if (state.attackTicks < telegraph) {
             return;
@@ -441,7 +441,7 @@ public final class DragonCombatController {
                 if (target != null) {
                     state.current = Attack.DIVE;
                     state.attackTicks = Math.max(0, telegraph - 10);
-                    state.snapshotPos = target.getPos();
+                    state.snapshotPos = target.getEntityPos();
                     play(config, world, dragon.getBlockPos(), ModSounds.DIVE_WARNING, 0.9f);
                     ringParticles(world, state.snapshotPos, 6.0, 24);
                     return;
@@ -517,13 +517,13 @@ public final class DragonCombatController {
             if (player.isSpectator() || player.isCreative() || !player.isAlive()) {
                 continue;
             }
-            double dist = player.getPos().distanceTo(state.snapshotPos);
+            double dist = player.getEntityPos().distanceTo(state.snapshotPos);
             if (dist > 6.5) {
                 continue;
             }
             double falloff = 1.0 - (dist / 7.5);
             player.damage(world, source, (float) (11.0 * tuning.damageScale() * falloff));
-            Vec3d away = player.getPos().subtract(state.snapshotPos);
+            Vec3d away = player.getEntityPos().subtract(state.snapshotPos);
             double len = Math.max(0.3, Math.sqrt(away.x * away.x + away.z * away.z));
             double kb = player.isBlocking() ? 0.25 : 1.0;
             player.addVelocity(away.x / len * 0.7 * kb, 0.35 * kb, away.z / len * 0.7 * kb);
@@ -534,18 +534,18 @@ public final class DragonCombatController {
     private static void executeGust(ServerWorld world, EnderDragonEntity dragon,
                                     DragonState state, Tuning tuning, DragonBrainConfig config) {
         play(config, world, dragon.getBlockPos(), ModSounds.WING_GUST, 1.0f);
-        ringParticles(world, dragon.getPos(), 8.0, 28);
+        ringParticles(world, dragon.getEntityPos(), 8.0, 28);
         DamageSource source = world.getDamageSources().mobAttack(dragon);
         for (ServerPlayerEntity player : world.getPlayers()) {
             if (player.isSpectator() || player.isCreative() || !player.isAlive()) {
                 continue;
             }
-            double dist = player.getPos().distanceTo(dragon.getPos());
+            double dist = player.getEntityPos().distanceTo(dragon.getEntityPos());
             if (dist > 16.0) {
                 continue;
             }
             player.damage(world, source, 3.0f * tuning.damageScale());
-            Vec3d away = player.getPos().subtract(dragon.getPos());
+            Vec3d away = player.getEntityPos().subtract(dragon.getEntityPos());
             double len = Math.max(0.3, Math.sqrt(away.x * away.x + away.z * away.z));
             double kb = player.isBlocking() ? 0.3 : 1.15;
             player.addVelocity(away.x / len * kb, 0.3, away.z / len * kb);
@@ -555,13 +555,13 @@ public final class DragonCombatController {
 
     private static void executePulse(ServerWorld world, EnderDragonEntity dragon,
                                      DragonState state, Tuning tuning, DragonBrainConfig config) {
-        ringParticles(world, dragon.getPos(), 16.0, 40);
+        ringParticles(world, dragon.getEntityPos(), 16.0, 40);
         DamageSource source = world.getDamageSources().dragonBreath();
         for (ServerPlayerEntity player : world.getPlayers()) {
             if (player.isSpectator() || player.isCreative() || !player.isAlive()) {
                 continue;
             }
-            double dist = player.getPos().distanceTo(dragon.getPos());
+            double dist = player.getEntityPos().distanceTo(dragon.getEntityPos());
             if (dist > 18.0 || !player.isOnGround()) {
                 continue; // jumping (or leaving the radius) fully avoids the pulse
             }
@@ -637,29 +637,6 @@ public final class DragonCombatController {
         DragonBrainConfig config = ConfigManager.get();
         float ratio = dragon.getMaxHealth() > 0 ? dragon.getHealth() / dragon.getMaxHealth() : 1.0f;
         return BossPhase.forHealth(ratio, config.ragePhaseHealthThreshold, config.finalPhaseHealthThreshold);
-    }
-
-    /** Command helper: triggers a fully telegraphed attack through the normal pipeline. */
-    public static String forceAttack(ServerWorld world, EnderDragonEntity dragon, Attack attack) {
-        DragonState state = STATES.computeIfAbsent(dragon.getUuid(), u -> new DragonState());
-        DragonBrainConfig config = ConfigManager.get();
-        Tuning tuning = tuning(config, state.adaptiveFactor);
-        if (attack == Attack.NONE || attack == null) {
-            List<Attack> pool = eligibleAttacks(world, dragon, phaseOf(dragon, tuning), tuning, state);
-            if (pool.isEmpty()) {
-                return "no attack is currently eligible (requirements not met)";
-            }
-            attack = pool.get(dragon.getRandom().nextInt(pool.size()));
-        }
-        if (attack == Attack.CRYSTAL_OVERCHARGE) {
-            EndCrystalEntity crystal = findOverchargeCrystal(world, dragon, state);
-            if (crystal == null) {
-                return "crystal_overcharge: no eligible End Crystal found to channel";
-            }
-        }
-        beginAttack(world, dragon, state, tuning, attack);
-        return "triggered " + attack.name().toLowerCase() + " with its normal telegraph (~"
-                + (state.phaseTicksRemaining / 20.0) + "s reaction window)";
     }
 
     public static String describe(EnderDragonEntity dragon) {

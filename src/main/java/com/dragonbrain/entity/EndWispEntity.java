@@ -84,7 +84,7 @@ public class EndWispEntity extends MobEntity {
             if (this.holder == null) {
                 return;
             }
-            Vec3d anchor = this.holder.getPos().add(0, 2.4, 0);
+            Vec3d anchor = this.holder.getEntityPos().add(0, 2.4, 0);
             if (squaredDistanceTo(anchor.x, anchor.y, anchor.z) > 3.0) {
                 getNavigation().startMovingTo(anchor.x, anchor.y, anchor.z, 1.2);
             }
