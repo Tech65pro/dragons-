@@ -70,7 +70,7 @@ FabricMC/fabric-example-mod@1.21.11.
 
 ## 3.1.0 verification (2026-10-28)
 
-Push run on `arena/caa966a9-dragons` (commit `dad47ed`): **build,
+Push run 40689409877 on `arena/caa966a9-dragons` (commit `dad47ed`): **build,
 server-smoke, client-smoke and release all succeeded.** Server smoke
 (18 assertions) includes `biomes: 5/5 registered`, `structures: 4/4
 registered`, `Asset check passed: 99/99`, and successful
