@@ -67,3 +67,22 @@ FabricMC/fabric-example-mod@1.21.11.
   biome→feature and structure→pool references (700+ checks total).
 - Server smoke additionally asserts `/locate biome` and
   `/locate structure` succeed from (2500, 2500) in a real generated End.
+
+## 3.1.0 verification (2026-10-28)
+
+Push run on `arena/caa966a9-dragons` (commit `dad47ed`): **build,
+server-smoke, client-smoke and release all succeeded.** Server smoke
+(18 assertions) includes `biomes: 5/5 registered`, `structures: 4/4
+registered`, `Asset check passed: 99/99`, and successful
+`/locate biome dragonbrain:void_gardens` + `/locate structure
+dragonbrain:ancient_end_ruins` from (2500, 2500) in a generated End.
+Release `v3.1.0` was auto-published by the release job from that run's
+artifacts: https://github.com/Tech65pro/dragons-/releases/tag/v3.1.0
+(jar 2,230,207 B, RP zip 31,079 B).
+
+Yarn note: `1.21.11+build.1` predates several renames visible on the
+yarn repo's 1.21.11 branch HEAD — e.g. `DynamicRegistryManager` there
+has no `get(RegistryKey)`/`getWrapperOrThrow`; diagnostics use
+`streamAllRegistries()` instead. Entity position is
+`getEntityPos()` (via `HeldItemContext`); plain `Entity` has
+`getEyePos()` only.

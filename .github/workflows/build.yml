@@ -108,7 +108,7 @@ jobs:
           echo "smoke_exit=$SMOKE"
           echo "----- smoke transcript -----"; cat smoke.log
           echo "----- server log tail -----"; tail -40 server.log
-          head -40 smoke.log | while IFS= read -r line; do echo "::notice::SMOKE $line"; done
+          grep -E "PASS |FAIL |SMOKE (PASSED|FAILED)" smoke.log | head -9 | while IFS= read -r line; do echo "::notice::SMOKE $line"; done
           grep -iE "error|exception|caused by" server.log | grep -viE "rcon" | head -10 | while IFS= read -r line; do echo "::error::SERVER $line"; done
           exit $SMOKE
       - name: upload server + smoke logs
