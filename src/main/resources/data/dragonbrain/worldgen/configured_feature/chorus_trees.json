@@ -1,0 +1,10 @@
+{
+  "type": "dragonbrain:end_formation",
+  "config": {
+    "primary": "dragonbrain:chorus_bark_log",
+    "secondary": "dragonbrain:chorus_canopy",
+    "style": "tree",
+    "min_height": 5,
+    "max_height": 9
+  }
+}

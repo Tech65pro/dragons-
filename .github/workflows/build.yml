@@ -1,0 +1,212 @@
+name: build
+# Least privilege: read-only by default. Only the release job (which runs
+# exclusively after every check passes, on push) may write contents.
+permissions:
+  contents: read
+on: [pull_request, push, workflow_dispatch]
+concurrency:
+  group: dragonbrain-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: setup python (asset validator)
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: install validator deps
+        run: pip install pillow
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: build (includes validateAssets via check, plus the vanilla resource pack zip)
+        run: |
+          set +e
+          ./gradlew build zipVanillaResourcePack --stacktrace --console=plain 2>&1 | tee build.log
+          RC=${PIPESTATUS[0]}
+          if [ "$RC" != "0" ]; then
+            echo "----- gradle failure digest -----"
+            grep -A4 "error:" build.log | grep -E "error:|symbol:|location:" | head -8 | while IFS= read -r line; do echo "::warning::JAVAC $line"; done
+            grep -E "^Caused by:" build.log | head -3 | while IFS= read -r line; do echo "::warning::ROOT $line"; done
+          fi
+          exit $RC
+      - name: upload build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+      - name: capture build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: DragonBrain-3.1
+          path: build/libs/
+
+  server-smoke:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: prepare dev server (eula + rcon)
+        run: |
+          chmod +x ./gradlew
+          mkdir -p run
+          echo "eula=true" > run/eula.txt
+          cat > run/server.properties <<'PROPS'
+          enable-rcon=true
+          rcon.password=dragonbrain-smoke
+          rcon.port=25575
+          online-mode=false
+          level-type=minecraft:superflat
+          spawn-protection=0
+          max-tick-time=0
+          PROPS
+      - name: boot server and run RCON smoke test
+        run: |
+          set +e
+          # seed both candidate run dirs (loom default is run/)
+          for d in run run/server; do
+            mkdir -p $d
+            echo "eula=true" > $d/eula.txt
+            cp run/server.properties $d/server.properties 2>/dev/null || true
+          done
+          ./gradlew runServer --console=plain --args="--nogui" > server.log 2>&1 &
+          SERVER_PID=$!
+          ( for i in $(seq 1 48); do
+              sleep 15
+              grep -hE "Done \(|RCON running|Starting minecraft server|EULA|FAILED|Exception in|ERROR" server.log 2>/dev/null | tail -1 > .bootline
+              if ! cmp -s .bootline .bootline.prev 2>/dev/null; then cp .bootline .bootline.prev; while IFS= read -r l; do echo "::notice::BOOT $l"; done < .bootline; fi
+            done ) &
+          WATCH_PID=$!
+          timeout 900 python3 -u tools/ci_server_smoke.py dragonbrain-smoke 25575 600 > smoke.log 2>&1
+          SMOKE=$?
+          kill $WATCH_PID 2>/dev/null
+          timeout 45 tail --pid=$SERVER_PID -f /dev/null || kill $SERVER_PID 2>/dev/null
+          wait $SERVER_PID 2>/dev/null
+          echo "smoke_exit=$SMOKE"
+          echo "----- smoke transcript -----"; cat smoke.log
+          echo "----- server log tail -----"; tail -40 server.log
+          grep -E "PASS |FAIL |SMOKE (PASSED|FAILED)" smoke.log | head -9 | while IFS= read -r line; do echo "::notice::SMOKE $line"; done
+          grep -iE "error|exception|caused by" server.log | grep -viE "rcon" | head -10 | while IFS= read -r line; do echo "::error::SERVER $line"; done
+          exit $SMOKE
+      - name: upload server + smoke logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-smoke-logs
+          path: |
+            server.log
+            smoke.log
+            run/crash-reports/*.txt
+            run/server/crash-reports/*.txt
+          if-no-files-found: ignore
+
+  client-smoke:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: install virtual display + GL
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri libasound2t64 > /dev/null
+      - name: boot dev client headlessly and scan for resource errors
+        run: |
+          set +e
+          chmod +x ./gradlew
+          timeout 540 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient --console=plain > client.log 2>&1 &
+          CLIENT_PID=$!
+          BOOTED=0
+          for i in $(seq 1 40); do
+            sleep 12
+            if grep -qE "Created: [0-9]+x[0-9]+x[0-9]+ minecraft:textures/atlas/blocks|Sound engine started" client.log 2>/dev/null; then BOOTED=1; sleep 20; break; fi
+            kill -0 $CLIENT_PID 2>/dev/null || break
+          done
+          echo "booted=$BOOTED"
+          grep -inE "dragonbrain" client.log | grep -iE "error|missing|fail|exception" | grep -viE "recommends" | head -30 > client-errors.txt || true
+          grep -inE "Unable to load model|Missing texture|Failed to load (model|blockstate)|Mixin.*(ERROR|FATAL)" client.log | head -30 >> client-errors.txt || true
+          pkill -f "Minecraft" 2>/dev/null; kill $CLIENT_PID 2>/dev/null; wait $CLIENT_PID 2>/dev/null
+          echo "----- dragonbrain-relevant client errors -----"; cat client-errors.txt
+          echo "----- client log tail -----"; tail -30 client.log
+          if [ "$BOOTED" != "1" ]; then echo "::error::client never reached resource loading"; exit 2; fi
+          if [ -s client-errors.txt ]; then echo "::error::client resource errors found"; exit 1; fi
+          echo "CLIENT SMOKE PASSED"
+      - name: upload client log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: client-smoke-log
+          path: |
+            client.log
+            client-errors.txt
+          if-no-files-found: ignore
+
+  release:
+    # Publishes only from push (or manual dispatch), only after ALL checks
+    # pass, and only with artifacts built in this same run. No special
+    # commit-message trigger and no empty-commit retries needed: if the
+    # release already exists, its assets are refreshed from this run.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [build, server-smoke, client-smoke]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: checkout repository (for version + release notes)
+        uses: actions/checkout@v6
+      - name: download built artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: DragonBrain-3.1
+          path: dist
+      - name: verify artifacts and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="$(grep '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')"
+          echo "mod_version=$VERSION"
+          ls -lh dist/
+          test -s "dist/dragonbrain-$VERSION.jar"
+          test -s "dist/DragonBrain-AbyssalEnd-Vanilla.zip"
+          TAG="v$VERSION"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG exists — refreshing assets from this verified run"
+            gh release upload "$TAG" "dist/dragonbrain-$VERSION.jar" "dist/DragonBrain-AbyssalEnd-Vanilla.zip" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "dist/dragonbrain-$VERSION.jar" "dist/DragonBrain-AbyssalEnd-Vanilla.zip" \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+              --title "DragonBrain $VERSION — The Abyssal End, completed (pre-release)" \
+              --notes-file "docs/RELEASE_NOTES_$VERSION.md"
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url,tagName,assets --jq '{url, tagName, assets: [.assets[].name]}'

@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "dragonbrain:block/chorus_bark_log",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "dragonbrain:block/chorus_bark_log"
+    },
+    "axis=z": {
+      "model": "dragonbrain:block/chorus_bark_log",
+      "x": 90
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "dragonbrain:block/shattered_pillar_top",
+    "side": "dragonbrain:block/shattered_pillar"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " R ",
+    "RAR",
+    " R "
+  ],
+  "key": {
+    "R": "dragonbrain:resonance_shard",
+    "A": "dragonbrain:abyssal_alloy_ingot"
+  },
+  "result": {
+    "id": "dragonbrain:rift_compass",
+    "count": 1
+  }
+}

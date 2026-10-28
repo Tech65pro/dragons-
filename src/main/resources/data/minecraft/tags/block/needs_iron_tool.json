@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "dragonbrain:abyssal_alloy_block",
+    "dragonbrain:eclipse_lantern",
+    "dragonbrain:abyssal_trophy",
+    "dragonbrain:engraved_abyssal_bricks"
+  ]
+}

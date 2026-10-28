@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "dragonbrain:cataclysm_scale"
+    },
+    "title": {
+      "translate": "advancements.dragonbrain.cataclysm"
+    },
+    "description": {
+      "translate": "advancements.dragonbrain.cataclysm.desc"
+    },
+    "frame": "goal"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dragonbrain:cataclysm_scale"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "dragonbrain:root"
+}

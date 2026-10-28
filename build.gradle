@@ -1,0 +1,62 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+base { archivesName = project.archives_base_name }
+
+repositories { mavenCentral() }
+
+loom {
+    mods {
+        "dragonbrain" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filteringCharset "UTF-8"
+    filesMatching("fabric.mod.json") { expand "version": project.version }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = "UTF-8"
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+    from("LICENSE") { rename { "${it}_${project.archives_base_name}" } }
+    from("CREDITS.md")
+}
+
+tasks.register('validateAssets', Exec) {
+    group = 'verification'
+    description = 'Validates every texture/model/sound/lang reference (tools/validate_assets.py)'
+    commandLine 'python3', 'tools/validate_assets.py', '--strict'
+}
+tasks.named('check') { dependsOn 'validateAssets' }
+
+tasks.register('zipVanillaResourcePack', Zip) {
+    group = 'distribution'
+    description = 'Builds the OPTIONAL vanilla-End overhaul resource pack zip'
+    archiveFileName = 'DragonBrain-AbyssalEnd-Vanilla.zip'
+    destinationDirectory = layout.buildDirectory.dir('libs')
+    from 'resourcepack/DragonBrain-AbyssalEnd-Vanilla'
+}

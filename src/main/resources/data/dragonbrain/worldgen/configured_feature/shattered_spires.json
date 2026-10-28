@@ -1,0 +1,10 @@
+{
+  "type": "dragonbrain:end_formation",
+  "config": {
+    "primary": "dragonbrain:fractured_end_stone",
+    "secondary": "dragonbrain:shattered_pillar",
+    "style": "pillar",
+    "min_height": 6,
+    "max_height": 16
+  }
+}

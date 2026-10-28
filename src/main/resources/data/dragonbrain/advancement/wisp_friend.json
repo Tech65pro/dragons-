@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "dragonbrain:wisp_essence"
+    },
+    "title": {
+      "translate": "advancements.dragonbrain.wisp_friend"
+    },
+    "description": {
+      "translate": "advancements.dragonbrain.wisp_friend.desc"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dragonbrain:wisp_essence"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "dragonbrain:root"
+}

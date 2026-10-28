@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:random_patch",
+  "config": {
+    "feature": "dragonbrain:chorus_roots_plant",
+    "tries": 24,
+    "xz_spread": 7,
+    "y_spread": 3
+  }
+}

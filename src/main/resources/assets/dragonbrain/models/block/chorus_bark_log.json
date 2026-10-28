@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "dragonbrain:block/chorus_bark_log_top",
+    "side": "dragonbrain:block/chorus_bark_log"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "dragonbrain:lumen_moss_block",
+    "dragonbrain:gloam_petal_block",
+    "dragonbrain:chorus_canopy"
+  ]
+}

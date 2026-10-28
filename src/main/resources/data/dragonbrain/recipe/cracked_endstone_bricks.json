@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building_blocks",
+  "pattern": [
+    "EE",
+    "EE"
+  ],
+  "key": {
+    "E": "minecraft:end_stone_bricks"
+  },
+  "result": {
+    "id": "dragonbrain:cracked_endstone_bricks",
+    "count": 4
+  }
+}

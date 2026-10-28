@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "dragonbrain:sentinel_sanctuary",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 44,
+    "separation": 14,
+    "salt": 90210404
+  }
+}

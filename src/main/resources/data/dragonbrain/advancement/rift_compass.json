@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "dragonbrain:rift_compass"
+    },
+    "title": {
+      "translate": "advancements.dragonbrain.rift_compass"
+    },
+    "description": {
+      "translate": "advancements.dragonbrain.rift_compass.desc"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dragonbrain:rift_compass"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "dragonbrain:abyssal_alloy"
+}

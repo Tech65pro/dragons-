@@ -1,0 +1,10 @@
+{
+  "type": "dragonbrain:end_formation",
+  "config": {
+    "primary": "dragonbrain:starshale",
+    "secondary": "dragonbrain:astral_crystal_block",
+    "style": "pillar",
+    "min_height": 9,
+    "max_height": 18
+  }
+}

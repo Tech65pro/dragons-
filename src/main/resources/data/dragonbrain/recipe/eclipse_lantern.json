@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "decorations",
+  "pattern": [
+    " A ",
+    "ACA",
+    " A "
+  ],
+  "key": {
+    "A": "dragonbrain:abyssal_alloy_ingot",
+    "C": "dragonbrain:astral_crystal_block"
+  },
+  "result": {
+    "id": "dragonbrain:eclipse_lantern",
+    "count": 1
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "dragonbrain:resonance_vault",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 36,
+    "separation": 11,
+    "salt": 90210303
+  }
+}
