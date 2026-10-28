@@ -35,7 +35,10 @@ public final class AssetDiagnostics {
     /** Identifiers registered in the biome registry, or null if unavailable. */
     public static java.util.Set<Identifier> biomeIdsOrNull(MinecraftServer server) {
         try {
-            return registryManager(server).get(RegistryKeys.BIOME).getIds();
+            java.util.Set<Identifier> ids = new java.util.HashSet<>();
+            registryManager(server).getWrapperOrThrow(RegistryKeys.BIOME)
+                    .streamKeys().forEach(key -> ids.add(key.getValue()));
+            return ids;
         } catch (RuntimeException e) {
             DragonBrain.LOGGER.warn("Could not access biome registry: {}", e.getMessage());
             return null;
@@ -45,7 +48,10 @@ public final class AssetDiagnostics {
     /** Identifiers registered in the structure registry, or null if unavailable. */
     public static java.util.Set<Identifier> structureIdsOrNull(MinecraftServer server) {
         try {
-            return registryManager(server).get(RegistryKeys.STRUCTURE).getIds();
+            java.util.Set<Identifier> ids = new java.util.HashSet<>();
+            registryManager(server).getWrapperOrThrow(RegistryKeys.STRUCTURE)
+                    .streamKeys().forEach(key -> ids.add(key.getValue()));
+            return ids;
         } catch (RuntimeException e) {
             DragonBrain.LOGGER.warn("Could not access structure registry: {}", e.getMessage());
             return null;
