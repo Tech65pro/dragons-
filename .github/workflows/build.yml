@@ -30,7 +30,23 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build (includes validateAssets via check, plus the vanilla resource pack zip)
-        run: ./gradlew build zipVanillaResourcePack --stacktrace
+        run: |
+          set +e
+          ./gradlew build zipVanillaResourcePack --stacktrace --console=plain 2>&1 | tee build.log
+          RC=${PIPESTATUS[0]}
+          if [ "$RC" != "0" ]; then
+            echo "----- gradle failure digest -----"
+            grep -nE "error:|FAILURE|Exception|Caused by|What went wrong|error \[|\.java:" build.log | head -40 | while IFS= read -r line; do echo "::error::GRADLE $line"; done
+            tail -25 build.log | while IFS= read -r line; do echo "::error::TAIL $line"; done
+          fi
+          exit $RC
+      - name: upload build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
