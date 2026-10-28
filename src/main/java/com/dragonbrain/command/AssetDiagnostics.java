@@ -45,7 +45,7 @@ public final class AssetDiagnostics {
     }
 
     private static java.util.Set<Identifier> dynamicIdsOrNull(
-            MinecraftServer server, RegistryKey<Registry<?>> registryKey) {
+            MinecraftServer server, RegistryKey<? extends Registry<?>> registryKey) {
         try {
             RegistryWrapper<?> wrapper = server.getRegistryManager().getWrapperOrThrow(registryKey);
             java.util.Set<Identifier> ids = new java.util.HashSet<>();
