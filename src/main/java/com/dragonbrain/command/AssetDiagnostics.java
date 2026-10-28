@@ -2,9 +2,7 @@ package com.dragonbrain.command;
 
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 
@@ -36,24 +34,20 @@ public final class AssetDiagnostics {
 
     /** Identifiers registered in the biome registry, or null if unavailable. */
     public static java.util.Set<Identifier> biomeIdsOrNull(MinecraftServer server) {
-        return dynamicIdsOrNull(server, RegistryKeys.BIOME);
+        try {
+            return server.getRegistryManager().get(RegistryKeys.BIOME).getIds();
+        } catch (RuntimeException e) {
+            DragonBrain.LOGGER.warn("Could not access biome registry: {}", e.getMessage());
+            return null;
+        }
     }
 
     /** Identifiers registered in the structure registry, or null if unavailable. */
     public static java.util.Set<Identifier> structureIdsOrNull(MinecraftServer server) {
-        return dynamicIdsOrNull(server, RegistryKeys.STRUCTURE);
-    }
-
-    private static java.util.Set<Identifier> dynamicIdsOrNull(
-            MinecraftServer server, RegistryKey<? extends Registry<?>> registryKey) {
         try {
-            RegistryWrapper<?> wrapper = server.getRegistryManager().getWrapperOrThrow(registryKey);
-            java.util.Set<Identifier> ids = new java.util.HashSet<>();
-            wrapper.streamKeys().forEach(key -> ids.add(key.getValue()));
-            return ids;
+            return server.getRegistryManager().get(RegistryKeys.STRUCTURE).getIds();
         } catch (RuntimeException e) {
-            DragonBrain.LOGGER.warn("Could not access dynamic registry {}: {}",
-                    registryKey.getValue(), e.getMessage());
+            DragonBrain.LOGGER.warn("Could not access structure registry: {}", e.getMessage());
             return null;
         }
     }
