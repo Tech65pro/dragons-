@@ -36,7 +36,7 @@ jobs:
           RC=${PIPESTATUS[0]}
           if [ "$RC" != "0" ]; then
             echo "----- gradle failure digest -----"
-            grep -A2 "error:" build.log | head -8 | while IFS= read -r line; do echo "::warning::JAVAC $line"; done
+            grep -A4 "error:" build.log | grep -E "error:|symbol:|location:" | head -8 | while IFS= read -r line; do echo "::warning::JAVAC $line"; done
             grep -E "^Caused by:" build.log | head -3 | while IFS= read -r line; do echo "::warning::ROOT $line"; done
           fi
           exit $RC
