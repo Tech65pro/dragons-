@@ -35,7 +35,7 @@ public final class AssetDiagnostics {
     /** Identifiers registered in the biome registry, or null if unavailable. */
     public static java.util.Set<Identifier> biomeIdsOrNull(MinecraftServer server) {
         try {
-            return server.getRegistryManager().get(RegistryKeys.BIOME).getIds();
+            return registryManager(server).get(RegistryKeys.BIOME).getIds();
         } catch (RuntimeException e) {
             DragonBrain.LOGGER.warn("Could not access biome registry: {}", e.getMessage());
             return null;
@@ -45,11 +45,16 @@ public final class AssetDiagnostics {
     /** Identifiers registered in the structure registry, or null if unavailable. */
     public static java.util.Set<Identifier> structureIdsOrNull(MinecraftServer server) {
         try {
-            return server.getRegistryManager().get(RegistryKeys.STRUCTURE).getIds();
+            return registryManager(server).get(RegistryKeys.STRUCTURE).getIds();
         } catch (RuntimeException e) {
             DragonBrain.LOGGER.warn("Could not access structure registry: {}", e.getMessage());
             return null;
         }
+    }
+
+    private static net.minecraft.registry.DynamicRegistryManager registryManager(MinecraftServer server) {
+        // Via the overworld: World#getRegistryManager is the long-stable accessor.
+        return server.getWorld(net.minecraft.world.World.OVERWORLD).getRegistryManager();
     }
 
     public static int countRegisteredBlocks() {
