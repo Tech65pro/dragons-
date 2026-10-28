@@ -34,33 +34,29 @@ public final class AssetDiagnostics {
 
     /** Identifiers registered in the biome registry, or null if unavailable. */
     public static java.util.Set<Identifier> biomeIdsOrNull(MinecraftServer server) {
-        try {
-            java.util.Set<Identifier> ids = new java.util.HashSet<>();
-            registryManager(server).getWrapperOrThrow(RegistryKeys.BIOME)
-                    .streamKeys().forEach(key -> ids.add(key.getValue()));
-            return ids;
-        } catch (RuntimeException e) {
-            DragonBrain.LOGGER.warn("Could not access biome registry: {}", e.getMessage());
-            return null;
-        }
+        return dynamicIdsOrNull(server, RegistryKeys.BIOME, "biome");
     }
 
     /** Identifiers registered in the structure registry, or null if unavailable. */
     public static java.util.Set<Identifier> structureIdsOrNull(MinecraftServer server) {
-        try {
-            java.util.Set<Identifier> ids = new java.util.HashSet<>();
-            registryManager(server).getWrapperOrThrow(RegistryKeys.STRUCTURE)
-                    .streamKeys().forEach(key -> ids.add(key.getValue()));
-            return ids;
-        } catch (RuntimeException e) {
-            DragonBrain.LOGGER.warn("Could not access structure registry: {}", e.getMessage());
-            return null;
-        }
+        return dynamicIdsOrNull(server, RegistryKeys.STRUCTURE, "structure");
     }
 
-    private static net.minecraft.registry.DynamicRegistryManager registryManager(MinecraftServer server) {
-        // Via the overworld: World#getRegistryManager is the long-stable accessor.
-        return server.getWorld(net.minecraft.world.World.OVERWORLD).getRegistryManager();
+    private static java.util.Set<Identifier> dynamicIdsOrNull(
+            MinecraftServer server, net.minecraft.registry.RegistryKey<?> which, String label) {
+        try {
+            // Via the overworld: World#getRegistryManager is the long-stable accessor.
+            net.minecraft.registry.DynamicRegistryManager manager =
+                    server.getWorld(net.minecraft.world.World.OVERWORLD).getRegistryManager();
+            return manager.streamAllRegistries()
+                    .filter(entry -> entry.key().equals(which))
+                    .findFirst()
+                    .map(entry -> entry.value().getIds())
+                    .orElse(null);
+        } catch (RuntimeException e) {
+            DragonBrain.LOGGER.warn("Could not access {} registry: {}", label, e.getMessage());
+            return null;
+        }
     }
 
     public static int countRegisteredBlocks() {
