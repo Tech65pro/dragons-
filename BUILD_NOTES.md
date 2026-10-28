@@ -51,3 +51,19 @@ FabricMC/fabric-example-mod@1.21.11.
   crashing. Client smoke proves they apply cleanly on 1.21.11, but
   only visual inspection in a real fight confirms the swap timing —
   check the dragon at 100 % / 50 % / 20 % HP once in-game.
+
+## 3.1.0 build notes
+
+- Version lives in `gradle.properties` (`mod_version`); the release job
+  reads it, verifies `dist/dragonbrain-<version>.jar` and the RP zip are
+  non-empty, then creates or refreshes release `v<version>` — only on
+  push, only after all three CI jobs pass. Logs are workflow artifacts
+  (`server-smoke-logs`, `client-smoke-log`); nothing is pushed to branches
+  by CI anymore.
+- `tools/generate_worldgen.py` generates all datapack JSON + structure
+  `.nbt` templates (gzip NBT, DataVersion 4671, `size`/`pos` as
+  TAG_Int_Array as vanilla requires). `tools/validate_assets.py` parses
+  the templates back and cross-checks palettes, loot, foundations,
+  biome→feature and structure→pool references (700+ checks total).
+- Server smoke additionally asserts `/locate biome` and
+  `/locate structure` succeed from (2500, 2500) in a real generated End.

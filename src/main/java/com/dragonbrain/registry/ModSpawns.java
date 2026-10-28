@@ -1,6 +1,10 @@
 package com.dragonbrain.registry;
 
 import net.minecraft.entity.SpawnGroup;
+import net.minecraft.entity.SpawnLocationTypes;
+import net.minecraft.entity.SpawnRestriction;
+import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.biome.BiomeKeys;
 
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
@@ -16,6 +20,9 @@ public final class ModSpawns {
     }
 
     public static void init() {
+        SpawnRestriction.register(ModEntities.RIFT_STALKER, SpawnLocationTypes.ON_GROUND,
+                Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
+                HostileEntity::canSpawnIgnoreLightLevel);
         BiomeModifications.addSpawn(
                 BiomeSelectors.includeByKey(
                         BiomeKeys.END_HIGHLANDS, BiomeKeys.END_MIDLANDS,

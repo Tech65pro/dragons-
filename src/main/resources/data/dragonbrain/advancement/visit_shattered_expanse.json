@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "id": "dragonbrain:resonance_shard"
+    },
+    "title": {
+      "translate": "advancements.dragonbrain.visit_shattered_expanse"
+    },
+    "description": {
+      "translate": "advancements.dragonbrain.visit_shattered_expanse.desc"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "visit": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "dragonbrain:shattered_expanse"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "parent": "dragonbrain:root"
+}

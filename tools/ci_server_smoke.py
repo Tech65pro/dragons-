@@ -45,7 +45,7 @@ def read_packet(sock):
 class Rcon:
     def __init__(self, host, port, password):
         self.sock = socket.create_connection((host, port), timeout=30)
-        self.sock.settimeout(30)
+        self.sock.settimeout(180)  # locate commands can take a while
         self.next_id = 100
         self.sock.sendall(packet(100, 3, password))
         # Vanilla sends an empty RESPONSE_VALUE packet before AUTH_RESPONSE;
@@ -118,6 +118,39 @@ def main():
 
     out = rcon.cmd("dragonbrain difficulty expert")
     check("difficulty command", "EXPERT" in out, out)
+
+    # ---- 3.1: worldgen is registered and locatable in a real End ----
+    out = rcon.cmd("dragonbrain status biomes")
+    check("status biomes lists all five",
+          all(b in out for b in ("void_gardens", "chorus_wilds", "shattered_expanse",
+                                 "petrified_abyss", "astral_barrens")) and "MISSING" not in out, out)
+    out = rcon.cmd("dragonbrain status structures")
+    check("status structures lists all four",
+          all(b in out for b in ("ancient_end_ruins", "abandoned_observatory",
+                                 "resonance_vault", "sentinel_sanctuary")) and "MISSING" not in out, out)
+
+    out = rcon.cmd("dragonbrain test spawn end_wisp")
+    check("test spawn end_wisp", "Spawned dragonbrain:end_wisp" in out, out)
+
+    out = rcon.cmd("execute in minecraft:the_end positioned 2500 80 2500 "
+                   "run locate biome dragonbrain:void_gardens")
+    check("locate biome void_gardens in generated End", "is at" in out, out)
+
+    out = rcon.cmd("execute in minecraft:the_end positioned 2500 80 2500 "
+                   "run locate structure dragonbrain:ancient_end_ruins")
+    check("locate structure ancient_end_ruins in generated End", "is at" in out, out)
+
+    out = rcon.cmd("dragonbrain test structure resonance_vault")
+    check("test structure runs the real locator",
+          "Nearest dragonbrain:resonance_vault" in out
+          or "No dragonbrain:resonance_vault found within" in out, out)
+
+    out = rcon.cmd("dragonbrain help")
+    check("help mentions boss test", "test boss" in out, out)
+
+    out = rcon.cmd("dragonbrain status dragon")
+    check("status dragon answers honestly",
+          "No Ender Dragon" in out or "Dragon:" in out, out)
 
     rcon.cmd("stop")
     print("stop sent")

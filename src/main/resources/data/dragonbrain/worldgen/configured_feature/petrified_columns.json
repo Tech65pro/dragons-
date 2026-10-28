@@ -1,0 +1,10 @@
+{
+  "type": "dragonbrain:end_formation",
+  "config": {
+    "primary": "dragonbrain:petrified_stone",
+    "secondary": "dragonbrain:fossil_block",
+    "style": "pillar",
+    "min_height": 4,
+    "max_height": 9
+  }
+}

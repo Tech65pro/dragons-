@@ -40,7 +40,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * (DragonTextures held body/decal/eyes layer triples in 2.0).
  *
  * <p>Phase is captured in {@code updateRenderState} from the same health
- * thresholds the server-side DragonPhaseWatcher uses. All injections are
+ * thresholds the server-side DragonCombatController uses. All injections are
  * {@code require = 0}: a renamed vanilla target degrades to vanilla
  * textures, never a crash.
  */

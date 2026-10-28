@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "dragonbrain:sentinel_core"
+    },
+    "title": {
+      "translate": "advancements.dragonbrain.sentinel_slayer"
+    },
+    "description": {
+      "translate": "advancements.dragonbrain.sentinel_slayer.desc"
+    },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dragonbrain:sentinel_core"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "dragonbrain:resonance"
+}

@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "id": "dragonbrain:resonance_shard"
+    },
+    "title": {
+      "translate": "advancements.dragonbrain.visit_petrified_abyss"
+    },
+    "description": {
+      "translate": "advancements.dragonbrain.visit_petrified_abyss.desc"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "visit": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "biomes": "dragonbrain:petrified_abyss"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "parent": "dragonbrain:root"
+}

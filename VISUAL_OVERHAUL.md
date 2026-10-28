@@ -139,3 +139,17 @@ with its own `pack.mcmeta` (**pack_format 75** — verified for 1.21.11),
    `DragonBrain-3.0` (mod jar `dragonbrain-3.0.0.jar` + sources +
    `DragonBrain-AbyssalEnd-Vanilla.zip`, ~4.2 MB total) on the latest
    `build` workflow run; full logs mirrored on the `ci-logs` branch.
+
+## 3.1.0 completion addendum
+
+3.0 shipped the *look*; 3.1 makes it a playable overhaul. New: five real
+End biomes with ground/ore/flora features (custom `dragonbrain:end_formation`
+feature), four jigsaw structures with painted NBT templates and chest loot,
+12 advancements, a complete server-side dragon combat controller
+(telegraphed attacks, stagger, adaptive difficulty), Rift Compass structure
+locating, End Wisp guide behaviour, expanded vanilla refresh pack (24
+textures), full `/dragonbrain` status/test command surface, and a
+least-privilege CI pipeline that auto-releases only after build +
+server-smoke (incl. biome/structure `locate` in a generated End) +
+client-smoke all pass. See `FEATURE_AUDIT.md` for the honest
+before/after, including what still needs human playtesting.

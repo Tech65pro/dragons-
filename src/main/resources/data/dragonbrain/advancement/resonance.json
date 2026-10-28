@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "dragonbrain:resonance_shard"
+    },
+    "title": {
+      "translate": "advancements.dragonbrain.resonance"
+    },
+    "description": {
+      "translate": "advancements.dragonbrain.resonance.desc"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dragonbrain:resonance_shard"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "dragonbrain:root"
+}

@@ -1,0 +1,30 @@
+{
+  "name": "dragonbrain:ancient_end_ruins/starts",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dragonbrain:ancient_end_ruins/ruin_a",
+        "projection": "rigid",
+        "processors": {
+          "processor_type": "minecraft:empty",
+          "processors": []
+        }
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dragonbrain:ancient_end_ruins/ruin_b",
+        "projection": "rigid",
+        "processors": {
+          "processor_type": "minecraft:empty",
+          "processors": []
+        }
+      }
+    }
+  ]
+}

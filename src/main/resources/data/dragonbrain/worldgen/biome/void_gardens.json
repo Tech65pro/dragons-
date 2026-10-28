@@ -1,0 +1,63 @@
+{
+  "temperature": 0.5,
+  "downfall": 0.5,
+  "has_precipitation": false,
+  "effects": {
+    "sky_color": 0,
+    "fog_color": 2760266,
+    "water_color": 4159204,
+    "water_fog_color": 329011,
+    "mood_sound": {
+      "sound_id": "dragonbrain:end_ambience",
+      "tick_delay": 6000,
+      "block_search_extent": 8,
+      "offset": 2.0
+    }
+  },
+  "spawners": {
+    "ambient": [
+      {
+        "type": "dragonbrain:end_wisp",
+        "weight": 10,
+        "minCount": 1,
+        "maxCount": 3
+      }
+    ],
+    "axolotls": [],
+    "creature": [],
+    "misc": [],
+    "monster": [
+      {
+        "type": "minecraft:enderman",
+        "weight": 10,
+        "minCount": 4,
+        "maxCount": 4
+      }
+    ],
+    "underground_water_creature": [],
+    "water_ambient": [],
+    "water_creature": []
+  },
+  "spawn_costs": {},
+  "carvers": [],
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "dragonbrain:lumen_moss_patches",
+      "dragonbrain:gloam_petal_patches"
+    ],
+    [],
+    [],
+    [
+      "dragonbrain:void_lily_patch",
+      "dragonbrain:garden_spires",
+      "minecraft:chorus_plant"
+    ],
+    []
+  ]
+}

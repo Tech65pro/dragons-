@@ -289,6 +289,7 @@ def main():
 
     # 12. resource pack -------------------------------------------------------------------------
     mcmeta = load_json(os.path.join(RP, "pack.mcmeta")) or {}
+    worldgen_checks()
     ok(mcmeta.get("pack", {}).get("pack_format") == 75,
        f"resource pack pack_format {mcmeta.get('pack', {}).get('pack_format')} != 75 (MC 1.21.11)")
     rp_tex_dir = os.path.join(RP, "assets/minecraft/textures")
@@ -336,6 +337,168 @@ def main():
         return 1
     print("PASS — all asset checks green")
     return 0
+
+
+
+# ---------------- worldgen validation (appended 3.1) ----------------
+import gzip as _gzip
+class _R:
+    def __init__(self, data): self.d=data; self.i=0
+    def u8(self): v=self.d[self.i]; self.i+=1; return v
+    def i8(self): import struct as st; v=st.unpack_from(">b",self.d,self.i)[0]; self.i+=1; return v
+    def i16(self): import struct as st; v=st.unpack_from(">h",self.d,self.i)[0]; self.i+=2; return v
+    def i32(self): import struct as st; v=st.unpack_from(">i",self.d,self.i)[0]; self.i+=4; return v
+    def i64(self): import struct as st; v=st.unpack_from(">q",self.d,self.i)[0]; self.i+=8; return v
+    def f32(self): import struct as st; v=st.unpack_from(">f",self.d,self.i)[0]; self.i+=4; return v
+    def f64(self): import struct as st; v=st.unpack_from(">d",self.d,self.i)[0]; self.i+=8; return v
+    def s(self): n=self.i16(); v=self.d[self.i:self.i+n].decode(); self.i+=n; return v
+    def payload(self, t):
+        if t==1: return self.i8()
+        if t==2: return self.i16()
+        if t==3: return self.i32()
+        if t==4: return self.i64()
+        if t==5: return self.f32()
+        if t==6: return self.f64()
+        if t==7: n=self.i32(); v=list(self.d[self.i:self.i+n]); self.i+=n; return v
+        if t==8: return self.s()
+        if t==9:
+            et=self.u8(); n=self.i32(); return [self.payload(et) for _ in range(n)]
+        if t==10:
+            out={}
+            while True:
+                tt=self.u8()
+                if tt==0: break
+                nm=self.s()
+                out[nm]=self.payload(tt)  # read name BEFORE payload (RHS-first eval!)
+            return out
+        if t==11: n=self.i32(); return [self.i32() for _ in range(n)]
+        if t==12: n=self.i32(); return [self.i64() for _ in range(n)]
+        raise ValueError(f"bad tag {t}")
+
+def load_structure_nbt(path):
+    with open(path,'rb') as f: raw=f.read()
+    r=_R(_gzip.decompress(raw))
+    t=r.u8(); name=r.s()
+    if t!=10: raise ValueError("root is not compound")
+    return r.payload(10)
+
+def data_json(rel):
+    p=os.path.join(RES,'data','dragonbrain',rel)
+    with open(p) as f: return json.load(f)
+
+def worldgen_checks():
+    biomes=["void_gardens","chorus_wilds","shattered_expanse","petrified_abyss","astral_barrens"]
+    structures={"ancient_end_ruins":"ruins","abandoned_observatory":"observatory",
+                "resonance_vault":"vault","sentinel_sanctuary":"sanctuary"}
+    for b in biomes:
+        rel=f"worldgen/biome/{b}.json"; p=os.path.join(RES,'data','dragonbrain',rel)
+        if not ok(os.path.exists(p), f"biome json exists: {b}"): continue
+        j=data_json(rel)
+        ok(len(j.get("features",[]))==11, f"{b}: 11 feature steps")
+        for step in j.get("features",[]):
+            for ref in step:
+                if ref.startswith("dragonbrain:"):
+                    name=ref.split(':')[1]
+                    ok(os.path.exists(os.path.join(RES,'data','dragonbrain',f"worldgen/placed_feature/{name}.json")),
+                          f"{b}: placed feature exists {ref}")
+        for group in ("monster","ambient"):
+            for s in j.get("spawners",{}).get(group,[]):
+                if s["type"].startswith("dragonbrain:"):
+                    ok(s["type"].split(':')[1] in set(ENTITIES), f"{b}: spawner entity registered {s['type']}")
+                ok(0 < s["weight"] <= 100 and 1 <= s["minCount"] <= s["maxCount"] <= 8,
+                      f"{b}: spawner bounds sane {s['type']}")
+    # placed -> configured refs
+    pf_dir=os.path.join(RES,'data','dragonbrain','worldgen','placed_feature')
+    for fn in sorted(os.listdir(pf_dir)):
+        j=data_json(f"worldgen/placed_feature/{fn}")
+        ref=j.get("feature","")
+        if ref.startswith("dragonbrain:"):
+            name=ref.split(':')[1]
+            cp=os.path.join(RES,'data','dragonbrain',f"worldgen/configured_feature/{name}.json")
+            ok(os.path.exists(cp), f"placed {fn}: configured feature {ref} exists")
+            if os.path.exists(cp):
+                cj=data_json(f"worldgen/configured_feature/{name}.json")
+                if cj.get("type")=="dragonbrain:end_formation":
+                    blk=cj.get("config",{}).get("primary","")
+                    ok(blk.split(':')[1] in set(BLOCKS) if blk.startswith("dragonbrain:") else blk.startswith("minecraft:"),
+                          f"configured {name}: formation block registered ({blk})")
+                    ok(cj.get("config",{}).get("style") in ("pillar","spike","tree"),
+                          f"configured {name}: formation style valid")
+                blob=json.dumps(cj)
+                feat_dir=os.path.join(RES,'data','dragonbrain','worldgen','configured_feature')
+                feature_names={os.path.splitext(f)[0] for f in os.listdir(feat_dir)}
+                for blk in set(re.findall(r"dragonbrain:([a-z0-9_]+)", blob)):
+                    ok(blk in set(BLOCKS) or blk=="end_formation" or blk in feature_names,
+                       f"configured {name}: id {blk} is a registered block or existing feature")
+    for s_id, short in structures.items():
+        sj=data_json(f"worldgen/structure/{s_id}.json")
+        ok(sj.get("type")=="minecraft:jigsaw", f"{s_id}: jigsaw type")
+        tag_rel=f"tags/worldgen/biome/has_structure/{s_id}.json"
+        ok(os.path.exists(os.path.join(RES,'data','dragonbrain',tag_rel)), f"{s_id}: has_structure tag exists")
+        pool=data_json(f"worldgen/template_pool/{s_id}/starts.json")
+        for el in pool.get("elements",[]):
+            loc=el["element"]["location"]
+            nbt_p=os.path.join(RES,'data',loc.split(':')[0],'structure',loc.split(':')[1]+'.nbt')
+            if not ok(os.path.exists(nbt_p), f"{s_id}: template nbt exists {loc}"): continue
+            try:
+                nbt=load_structure_nbt(nbt_p)
+            except Exception as e:
+                ok(False, f"{s_id}: template nbt parses ({loc}): {e}"); continue
+            ok(nbt.get("DataVersion",0) >= 3955, f"{s_id}: template DataVersion sane")
+            size=nbt.get("size",[0,0,0]); palette=nbt.get("palette",[])
+            ok(all(0 < d <= 48 for d in size), f"{s_id}: template size within bounds {size}")
+            for pk in palette:
+                nm=pk.get("Name","")
+                if nm.startswith("dragonbrain:"):
+                    ok(nm.split(':')[1] in set(BLOCKS), f"{s_id}: palette block {nm} registered")
+            names=[pk.get("Name") for pk in palette]
+            blocks=nbt.get("blocks",[])
+            ok(all(0 <= b.get("state",-1) < len(palette) for b in blocks), f"{s_id}: block palette indices valid")
+            footprint=size[0]*size[2] if len(size)==3 else 0
+            y0_count=sum(1 for b in blocks if b["pos"][1]==0)
+            # 0.55: circular platforms fill ~66% of their bounding square
+            ok(footprint>0 and y0_count >= 0.55*footprint and y0_count >= 60,
+               f"{s_id}: template has a solid foundation row ({y0_count}/{footprint})")
+            alloy=sum(1 for b in blocks if names[b["state"]]=="dragonbrain:abyssal_alloy_block")
+            ok(alloy <= 2, f"{s_id}: no end-game alloy block exploit (found {alloy})")
+            for b in blocks:
+                be=b.get("nbt")
+                if be and "LootTable" in be:
+                    lt=be["LootTable"]
+                    ns,path=lt.split(':')
+                    lp=os.path.join(RES,'data',ns,'loot_table',path+'.json')
+                    ok(os.path.exists(lp), f"{s_id}: chest loot table {lt} exists")
+                    if os.path.exists(lp):
+                        with open(lp) as f: lj=json.load(f)
+                        for blk in set(re.findall(r"dragonbrain:([a-z0-9_]+)", json.dumps(lj))):
+                            ok(blk in (set(BLOCKS)|set(ITEMS)), f"{s_id}: loot item {blk} registered")
+            for ent in nbt.get("entities",[]):
+                eid=ent.get("nbt",{}).get("id","")
+                if eid.startswith("dragonbrain:"):
+                    ok(eid.split(':')[1] in set(ENTITIES), f"{s_id}: template entity {eid} registered")
+        ss=data_json(f"worldgen/structure_set/{s_id}.json")
+        pl=ss.get("placement",{})
+        ok(8 <= pl.get("spacing",0) <= 64 and 0 <= pl.get("separation",-1) < pl.get("spacing",0),
+              f"{s_id}: structure_set spacing/separation sane")
+        ok(os.path.exists(os.path.join(RES,'data','dragonbrain',f"tags/worldgen/structure/locate/{s_id}.json")),
+              f"{s_id}: locate tag exists")
+    rt=data_json("tags/worldgen/structure/rift_compass_targets.json")
+    ok(len(rt.get("values",[]))==len(structures), "rift compass target tag covers all structures")
+    # advancements
+    adv_dir=os.path.join(RES,'data','dragonbrain','advancement')
+    lang=load_json(os.path.join(RES,'assets','dragonbrain','lang','en_us.json'))
+    for fn in sorted(os.listdir(adv_dir)):
+        j=data_json(f"advancement/{fn}")
+        disp=j.get("display",{})
+        icon=disp.get("icon",{}).get("id","")
+        if icon.startswith("dragonbrain:"):
+            ok(icon.split(':')[1] in (set(BLOCKS)|set(ITEMS)), f"advancement {fn}: icon item registered")
+        title=disp.get("title",{}).get("translate","")
+        ok(title in lang, f"advancement {fn}: title lang key present")
+        crit=json.dumps(j.get("criteria",{}))
+        for it in set(re.findall(r"dragonbrain:([a-z0-9_]+)", crit)):
+            ok(it in (set(BLOCKS)|set(ITEMS)) or it in [b if False else ""]+["void_gardens","chorus_wilds","shattered_expanse","petrified_abyss","astral_barrens"],
+                  f"advancement {fn}: criterion id {it} registered")
 
 
 if __name__ == "__main__":

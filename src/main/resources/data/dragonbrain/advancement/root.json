@@ -1,0 +1,22 @@
+{
+  "display": {
+    "icon": {
+      "id": "dragonbrain:eclipse_lantern"
+    },
+    "title": {
+      "translate": "advancements.dragonbrain.root"
+    },
+    "description": {
+      "translate": "advancements.dragonbrain.root.desc"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "enter_end": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "to": "minecraft:the_end"
+      }
+    }
+  }
+}

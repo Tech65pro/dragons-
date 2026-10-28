@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "dragonbrain:abyssal_alloy_ingot"
+    },
+    "title": {
+      "translate": "advancements.dragonbrain.abyssal_alloy"
+    },
+    "description": {
+      "translate": "advancements.dragonbrain.abyssal_alloy.desc"
+    },
+    "frame": "task"
+  },
+  "criteria": {
+    "has": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "dragonbrain:abyssal_alloy_ingot"
+          }
+        ]
+      }
+    }
+  },
+  "parent": "dragonbrain:resonance"
+}

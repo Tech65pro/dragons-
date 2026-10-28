@@ -819,6 +819,59 @@ def make_resourcepack():
         px[8, 4] = CHORUS[4]; px[6, 8] = CHORUS[3]; px[9, 10] = CHORUS[4]
     rp_item("popped_chorus_fruit", popped)
 
+    # --- 3.1 additions: end rod, portal frame, dragon loot items (all original) ---
+    rod = stone(1113, [H(c) for c in ("#8f8fa8", "#b9b9cf", "#dedee9", "#f4f4fb")], 0.03, 0.9)
+    rpx = rod.load()
+    for x in range(16):
+        rpx[x, 0] = H("#f8f8ff"); rpx[x, 15] = H("#6a6a86")
+    save_rp(rod, "block/end_rod.png")
+    frame_base = [H(c) for c in ("#3b5a44", "#4d7459", "#63906f", "#7fae87")]
+    save_rp(stone(1114, frame_base + END_STONE_LO[:1], 0.06, 0.9, cells=5),
+            "block/end_portal_frame_side.png")
+    ftop = stone(1115, frame_base, 0.06, 0.9, cells=5)
+    fpx = ftop.load()
+    for i in range(16):
+        fpx[i, 0] = fpx[i, 15] = H("#2c4634"); fpx[0, i] = fpx[15, i] = H("#2c4634")
+    for y in range(6, 10):
+        for x in range(6, 10):
+            fpx[x, y] = H("#101c13")
+    save_rp(ftop, "block/end_portal_frame_top.png")
+    feye = canvas(); fpx = feye.load()
+    for y in range(16):
+        for x in range(16):
+            fpx[x, y] = H("#1d3a26")
+    for y in range(4, 12):
+        for x in range(4, 12):
+            fpx[x, y] = DRAGON_BASE[4]
+    fpx[7, 7] = CYAN_ACCENT[4]; fpx[8, 7] = CYAN_ACCENT[4]
+    save_rp(feye, "block/end_portal_frame_eye.png")
+
+    def dragon_breath(d, px):
+        d.rectangle([6, 1, 9, 3], fill=H("#c8cede"), outline=H("#7d8694"))   # neck ring
+        d.rectangle([6, 4, 9, 6], fill=H("#aeb8c4"), outline=H("#7d8694"))   # neck
+        d.rectangle([4, 7, 11, 14], fill=MAGENTA[2], outline=MAGENTA[0])     # bottle
+        d.rectangle([5, 8, 6, 13], fill=MAGENTA[4])
+        px[9, 9] = MAGENTA[5]; px[8, 12] = MAGENTA[5]; px[10, 11] = DRAGON_BASE[5]
+    rp_item("dragon_breath", dragon_breath)
+    def end_crystal(d, px):
+        d.polygon([(8, 1), (12, 6), (8, 14), (4, 6)], fill=DRAGON_BASE[4], outline=DRAGON_BASE[1])
+        d.polygon([(8, 3), (10, 6), (8, 11), (6, 6)], fill=DRAGON_BASE[5])
+        px[8, 6] = (255, 255, 255, 255)
+        d.rectangle([6, 13, 9, 15], fill=H("#3a3a4a"), outline=H("#191922"))
+    rp_item("end_crystal", end_crystal)
+    def elytra(d, px):
+        d.polygon([(7, 2), (2, 5), (3, 12), (7, 10)], fill=CHORUS[2], outline=CHORUS[0])
+        d.polygon([(8, 2), (13, 5), (12, 12), (8, 10)], fill=CHORUS[2], outline=CHORUS[0])
+        d.line([(7, 3), (4, 10)], fill=CHORUS[4]); d.line([(8, 3), (11, 10)], fill=CHORUS[4])
+        px[7, 2] = MAGENTA[3]; px[8, 2] = MAGENTA[3]
+    rp_item("elytra", elytra)
+    def shulker_shell(d, px):
+        d.rectangle([3, 6, 12, 12], fill=CHORUS[3], outline=CHORUS[1])
+        d.rectangle([3, 6, 12, 8], fill=CHORUS[4])
+        d.line([(3, 10), (12, 10)], fill=CHORUS[1])
+        px[5, 7] = CHORUS[5]; px[10, 11] = CHORUS[2]
+    rp_item("shulker_shell", shulker_shell)
+
 def contact_sheet():
     """Visual QA grid of every generated 16x (and key entity) texture."""
     files = []

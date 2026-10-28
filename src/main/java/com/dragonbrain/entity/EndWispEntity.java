@@ -50,7 +50,68 @@ public class EndWispEntity extends MobEntity {
 
     @Override
     protected void initGoals() {
-        this.goalSelector.add(0, new WanderInAirGoal());
+        this.goalSelector.add(0, new FollowGuideHolderGoal());
+        this.goalSelector.add(1, new WanderInAirGoal());
+    }
+
+    /**
+     * Exploration support: a wisp trails a nearby player holding Wisp
+     * Essence or a Resonance Shard (a living lantern for the outer
+     * islands). It drops nothing extra for this, so it cannot be farmed.
+     */
+    private class FollowGuideHolderGoal extends Goal {
+        private net.minecraft.entity.player.PlayerEntity holder;
+
+        FollowGuideHolderGoal() {
+            setControls(EnumSet.of(Control.MOVE));
+        }
+
+        @Override
+        public boolean canStart() {
+            this.holder = findHolder();
+            return this.holder != null;
+        }
+
+        @Override
+        public boolean shouldContinue() {
+            return this.holder != null && this.holder.isAlive()
+                    && this.holder.squaredDistanceTo(EndWispEntity.this) < 32.0 * 32.0
+                    && holdsGuideItem(this.holder);
+        }
+
+        @Override
+        public void tick() {
+            if (this.holder == null) {
+                return;
+            }
+            Vec3d anchor = this.holder.getPos().add(0, 2.4, 0);
+            if (squaredDistanceTo(anchor.x, anchor.y, anchor.z) > 3.0) {
+                getNavigation().startMovingTo(anchor.x, anchor.y, anchor.z, 1.2);
+            }
+        }
+
+        private net.minecraft.entity.player.PlayerEntity findHolder() {
+            net.minecraft.entity.player.PlayerEntity best = null;
+            double bestSq = 24.0 * 24.0;
+            for (net.minecraft.entity.player.PlayerEntity player : getEntityWorld().getPlayers()) {
+                if (!holdsGuideItem(player)) {
+                    continue;
+                }
+                double sq = player.squaredDistanceTo(EndWispEntity.this);
+                if (sq < bestSq) {
+                    bestSq = sq;
+                    best = player;
+                }
+            }
+            return best;
+        }
+
+        private boolean holdsGuideItem(net.minecraft.entity.player.PlayerEntity player) {
+            return player.getMainHandStack().isOf(com.dragonbrain.registry.ModItems.WISP_ESSENCE)
+                    || player.getOffHandStack().isOf(com.dragonbrain.registry.ModItems.WISP_ESSENCE)
+                    || player.getMainHandStack().isOf(com.dragonbrain.registry.ModItems.RESONANCE_SHARD)
+                    || player.getOffHandStack().isOf(com.dragonbrain.registry.ModItems.RESONANCE_SHARD);
+        }
     }
 
     @Override

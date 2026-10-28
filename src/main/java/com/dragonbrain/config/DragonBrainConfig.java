@@ -16,6 +16,16 @@ public class DragonBrainConfig {
     public float ragePhaseHealthThreshold = 0.55f;
     public float finalPhaseHealthThreshold = 0.25f;
 
+    // dragon combat system (server-side additional attacks on top of vanilla flight)
+    public boolean dragonAttacksEnabled = true;
+    public float attackDamageMultiplier = 1.0f;
+    public float attackCooldownMultiplier = 1.0f;
+    public float telegraphDurationMultiplier = 1.0f;
+    public boolean crystalOverchargeEnabled = true;
+
+    // world generation
+    public boolean customBiomes = true;
+
     // visuals (client-facing; read on the logical client)
     public boolean customTexture = true;
     public boolean emissiveEyes = true;
@@ -39,6 +49,16 @@ public class DragonBrainConfig {
         }
         ambientVolume = clamp01(ambientVolume);
         musicVolume = clamp01(musicVolume);
+        attackDamageMultiplier = clampRange(attackDamageMultiplier, 0.1f, 5.0f);
+        attackCooldownMultiplier = clampRange(attackCooldownMultiplier, 0.25f, 4.0f);
+        telegraphDurationMultiplier = clampRange(telegraphDurationMultiplier, 0.4f, 3.0f);
+    }
+
+    private static float clampRange(float v, float min, float max) {
+        if (Float.isNaN(v)) {
+            return min;
+        }
+        return Math.max(min, Math.min(max, v));
     }
 
     private static float clamp01(float v) {

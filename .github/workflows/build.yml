@@ -1,7 +1,12 @@
 name: build
+# Least privilege: read-only by default. Only the release job (which runs
+# exclusively after every check passes, on push) may write contents.
 permissions:
-  contents: write
+  contents: read
 on: [pull_request, push, workflow_dispatch]
+concurrency:
+  group: dragonbrain-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -29,13 +34,13 @@ jobs:
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: DragonBrain-3.0
+          name: DragonBrain-3.1
           path: build/libs/
 
   server-smoke:
     needs: build
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
@@ -79,7 +84,7 @@ jobs:
               if ! cmp -s .bootline .bootline.prev 2>/dev/null; then cp .bootline .bootline.prev; while IFS= read -r l; do echo "::notice::BOOT $l"; done < .bootline; fi
             done ) &
           WATCH_PID=$!
-          timeout 660 python3 -u tools/ci_server_smoke.py dragonbrain-smoke 25575 600 > smoke.log 2>&1
+          timeout 900 python3 -u tools/ci_server_smoke.py dragonbrain-smoke 25575 600 > smoke.log 2>&1
           SMOKE=$?
           kill $WATCH_PID 2>/dev/null
           timeout 45 tail --pid=$SERVER_PID -f /dev/null || kill $SERVER_PID 2>/dev/null
@@ -87,30 +92,20 @@ jobs:
           echo "smoke_exit=$SMOKE"
           echo "----- smoke transcript -----"; cat smoke.log
           echo "----- server log tail -----"; tail -40 server.log
-          echo "----- where did the server run? -----"; find . -maxdepth 3 -name "eula.txt" -o -maxdepth 3 -name "server.properties" | head
           head -40 smoke.log | while IFS= read -r line; do echo "::notice::SMOKE $line"; done
           grep -iE "error|exception|caused by" server.log | grep -viE "rcon" | head -10 | while IFS= read -r line; do echo "::error::SERVER $line"; done
           exit $SMOKE
-      - name: publish logs to ci-logs branch
-        if: always()
-        run: |
-          git config user.name "dragonbrain-ci"
-          git config user.email "ci@dragonbrain.invalid"
-          mkdir -p /tmp/ci-logs
-          cp smoke.log server.log /tmp/ci-logs/ 2>/dev/null || true
-          find run -path "*crash-reports*" -name "*.txt" 2>/dev/null | head -3 | while read -r f; do cp "$f" /tmp/ci-logs/; done
-          git checkout --orphan ci-logs-tmp
-          git rm -rf --quiet . 2>/dev/null || true
-          mkdir -p logs && cp /tmp/ci-logs/* logs/ 2>/dev/null || true
-          git add logs
-          git commit -q -m "smoke logs run ${{ github.run_id }}" || exit 0
-          git push -f origin ci-logs-tmp:ci-logs
-      - name: upload server log
+      - name: upload server + smoke logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: server-smoke-log
-          path: server.log
+          name: server-smoke-logs
+          path: |
+            server.log
+            smoke.log
+            run/crash-reports/*.txt
+            run/server/crash-reports/*.txt
+          if-no-files-found: ignore
 
   client-smoke:
     needs: build
@@ -149,42 +144,53 @@ jobs:
           if [ "$BOOTED" != "1" ]; then echo "::error::client never reached resource loading"; exit 2; fi
           if [ -s client-errors.txt ]; then echo "::error::client resource errors found"; exit 1; fi
           echo "CLIENT SMOKE PASSED"
-      - name: publish client log to ci-logs branch
+      - name: upload client log
         if: always()
-        run: |
-          git config user.name "dragonbrain-ci"
-          git config user.email "ci@dragonbrain.invalid"
-          git fetch origin ci-logs || true
-          git checkout -B ci-logs-tmp origin/ci-logs 2>/dev/null || git checkout --orphan ci-logs-tmp
-          mkdir -p logs
-          cp client.log logs/client.log 2>/dev/null || true
-          git add logs/client.log 2>/dev/null || true
-          git commit -q -m "client log run ${{ github.run_id }}" || exit 0
-          git push -f origin ci-logs-tmp:ci-logs
+        uses: actions/upload-artifact@v7
+        with:
+          name: client-smoke-log
+          path: |
+            client.log
+            client-errors.txt
+          if-no-files-found: ignore
+
   release:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
+    # Publishes only from push (or manual dispatch), only after ALL checks
+    # pass, and only with artifacts built in this same run. No special
+    # commit-message trigger and no empty-commit retries needed: if the
+    # release already exists, its assets are refreshed from this run.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [build, server-smoke, client-smoke]
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
+      - name: checkout repository (for version + release notes)
+        uses: actions/checkout@v6
       - name: download built artifacts
         uses: actions/download-artifact@v8
         with:
-          name: DragonBrain-3.0
+          name: DragonBrain-3.1
           path: dist
-      - name: list artifacts
-        run: ls -lh dist/
-      - name: create GitHub release
+      - name: verify artifacts and publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete v3.0.0 --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-          gh release create v3.0.0 dist/dragonbrain-3.0.0.jar dist/DragonBrain-AbyssalEnd-Vanilla.zip \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
-            --title "DragonBrain 3.0.0 — End Visual Overhaul (pre-release)" \
-            --notes "DragonBrain 3.0 visual overhaul for Minecraft Java 1.21.11 + Fabric (Loader 0.20.1+, Fabric API 0.141.6+).
-
-          **Downloads:**
-          - \`dragonbrain-3.0.0.jar\` — the mod (put in \`mods/\`)
-          - \`DragonBrain-AbyssalEnd-Vanilla.zip\` — OPTIONAL vanilla-End texture refresh (put in \`resourcepacks/\`)
-
-          Verified in CI: compile, dedicated-server smoke test (10/10 RCON assertions), headless-client resource load (0 errors). Pre-release from PR #1 branch; see README/CREDITS in the repo. All artwork original or preserved DragonBrain 2.0 assets — no third-party pack files bundled (Beyonder/Fancy End are separate optional downloads from their authors)."
+          set -euo pipefail
+          VERSION="$(grep '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')"
+          echo "mod_version=$VERSION"
+          ls -lh dist/
+          test -s "dist/dragonbrain-$VERSION.jar"
+          test -s "dist/DragonBrain-AbyssalEnd-Vanilla.zip"
+          TAG="v$VERSION"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG exists — refreshing assets from this verified run"
+            gh release upload "$TAG" "dist/dragonbrain-$VERSION.jar" "dist/DragonBrain-AbyssalEnd-Vanilla.zip" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "dist/dragonbrain-$VERSION.jar" "dist/DragonBrain-AbyssalEnd-Vanilla.zip" \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+              --title "DragonBrain $VERSION — The Abyssal End, completed (pre-release)" \
+              --notes-file "docs/RELEASE_NOTES_$VERSION.md"
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url,tagName,assets --jq '{url, tagName, assets: [.assets[].name]}'

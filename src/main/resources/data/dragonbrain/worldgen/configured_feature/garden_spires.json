@@ -1,0 +1,10 @@
+{
+  "type": "dragonbrain:end_formation",
+  "config": {
+    "primary": "dragonbrain:chorus_bark_log",
+    "secondary": "dragonbrain:gloam_petal_block",
+    "style": "tree",
+    "min_height": 4,
+    "max_height": 7
+  }
+}

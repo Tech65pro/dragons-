@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import com.dragonbrain.command.DragonBrainCommands;
 import com.dragonbrain.config.ConfigManager;
-import com.dragonbrain.core.DragonPhaseWatcher;
+import com.dragonbrain.core.DragonCombatController;
 import com.dragonbrain.registry.ModBlocks;
 import com.dragonbrain.registry.ModEntities;
 import com.dragonbrain.registry.ModItemGroups;
@@ -14,6 +14,7 @@ import com.dragonbrain.registry.ModItems;
 import com.dragonbrain.registry.ModParticles;
 import com.dragonbrain.registry.ModSounds;
 import com.dragonbrain.registry.ModSpawns;
+import com.dragonbrain.worldgen.ModWorldgen;
 
 import net.fabricmc.api.ModInitializer;
 
@@ -46,8 +47,9 @@ public class DragonBrain implements ModInitializer {
         ModEntities.init();
         ModItemGroups.init();
         ModSpawns.init();
+        ModWorldgen.init();
         DragonBrainCommands.init();
-        DragonPhaseWatcher.init();
+        DragonCombatController.init();
         LOGGER.info("DragonBrain 3.0 initialized (difficulty={})",
                 ConfigManager.get().difficultyMode());
     }
