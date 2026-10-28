@@ -38,6 +38,7 @@ jobs:
             echo "----- gradle failure digest -----"
             grep -A2 "error:" build.log | head -8 | while IFS= read -r line; do echo "::warning::JAVAC $line"; done
             grep -E "^Caused by:" build.log | head -3 | while IFS= read -r line; do echo "::warning::ROOT $line"; done
+          fi
           exit $RC
       - name: upload build log
         if: always()
