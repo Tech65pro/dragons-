@@ -162,7 +162,7 @@ jobs:
           git commit -q -m "client log run ${{ github.run_id }}" || exit 0
           git push -f origin ci-logs-tmp:ci-logs
   release:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     needs: [build, server-smoke, client-smoke]
     runs-on: ubuntu-24.04
     steps:
