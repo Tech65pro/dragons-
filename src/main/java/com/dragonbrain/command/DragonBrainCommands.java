@@ -163,28 +163,28 @@ public final class DragonBrainCommands {
     }
 
     private static int statusBiomes(ServerCommandSource source) {
-        var registry = AssetDiagnostics.biomeRegistryOrNull(source.getServer());
-        if (registry == null) {
+        var biomeIds = AssetDiagnostics.biomeIdsOrNull(source.getServer());
+        if (biomeIds == null) {
             source.sendError(Text.literal("Biome registry unavailable on this server"));
             return 0;
         }
         send(source, "End biomes (use /locate biome dragonbrain:<id> in the End):");
         for (String id : ModWorldgen.BIOME_IDS) {
-            boolean present = registry.getOptionalValue(DragonBrain.id(id)).isPresent();
+            boolean present = biomeIds.contains(DragonBrain.id(id));
             send(source, " " + (present ? "✓" : "✗ MISSING") + " dragonbrain:" + id);
         }
         return 1;
     }
 
     private static int statusStructures(ServerCommandSource source) {
-        var registry = AssetDiagnostics.structureRegistryOrNull(source.getServer());
-        if (registry == null) {
+        var structureIds = AssetDiagnostics.structureIdsOrNull(source.getServer());
+        if (structureIds == null) {
             source.sendError(Text.literal("Structure registry unavailable on this server"));
             return 0;
         }
         send(source, "Structures (use /locate structure dragonbrain:<id>):");
         for (String id : ModWorldgen.STRUCTURE_IDS) {
-            boolean present = registry.getOptionalValue(DragonBrain.id(id)).isPresent();
+            boolean present = structureIds.contains(DragonBrain.id(id));
             send(source, " " + (present ? "✓" : "✗ MISSING") + " dragonbrain:" + id);
         }
         return 1;

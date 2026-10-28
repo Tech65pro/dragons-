@@ -1,13 +1,12 @@
 package com.dragonbrain.command;
 
-import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.gen.structure.Structure;
 
 import com.dragonbrain.DragonBrain;
 import com.dragonbrain.core.AssetManifest;
@@ -35,22 +34,26 @@ public final class AssetDiagnostics {
     private AssetDiagnostics() {
     }
 
-    public static Registry<Biome> biomeRegistryOrNull(MinecraftServer server) {
-        return dynamicOrNull(server, RegistryKeys.BIOME);
+    /** Identifiers registered in the biome registry, or null if unavailable. */
+    public static java.util.Set<Identifier> biomeIdsOrNull(MinecraftServer server) {
+        return dynamicIdsOrNull(server, RegistryKeys.BIOME);
     }
 
-    public static Registry<Structure> structureRegistryOrNull(MinecraftServer server) {
-        return dynamicOrNull(server, RegistryKeys.STRUCTURE);
+    /** Identifiers registered in the structure registry, or null if unavailable. */
+    public static java.util.Set<Identifier> structureIdsOrNull(MinecraftServer server) {
+        return dynamicIdsOrNull(server, RegistryKeys.STRUCTURE);
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> Registry<T> dynamicOrNull(MinecraftServer server,
-                                                 net.minecraft.registry.RegistryKey<Registry<T>> key) {
+    private static java.util.Set<Identifier> dynamicIdsOrNull(
+            MinecraftServer server, RegistryKey<Registry<?>> registryKey) {
         try {
-            DynamicRegistryManager manager = server.getRegistryManager();
-            return (Registry<T>) manager.get(key);
+            RegistryWrapper<?> wrapper = server.getRegistryManager().getWrapperOrThrow(registryKey);
+            java.util.Set<Identifier> ids = new java.util.HashSet<>();
+            wrapper.streamKeys().forEach(key -> ids.add(key.getValue()));
+            return ids;
         } catch (RuntimeException e) {
-            DragonBrain.LOGGER.warn("Could not access dynamic registry {}: {}", key, e.getMessage());
+            DragonBrain.LOGGER.warn("Could not access dynamic registry {}: {}",
+                    registryKey.getValue(), e.getMessage());
             return null;
         }
     }
@@ -85,13 +88,13 @@ public final class AssetDiagnostics {
     }
 
     public static int countRegisteredBiomes(MinecraftServer server) {
-        Registry<Biome> registry = biomeRegistryOrNull(server);
-        if (registry == null) {
+        java.util.Set<Identifier> ids = biomeIdsOrNull(server);
+        if (ids == null) {
             return 0;
         }
         int n = 0;
         for (String id : ModWorldgen.BIOME_IDS) {
-            if (registry.getOptionalValue(DragonBrain.id(id)).isPresent()) {
+            if (ids.contains(DragonBrain.id(id))) {
                 n++;
             }
         }
@@ -99,13 +102,13 @@ public final class AssetDiagnostics {
     }
 
     public static int countRegisteredStructures(MinecraftServer server) {
-        Registry<Structure> registry = structureRegistryOrNull(server);
-        if (registry == null) {
+        java.util.Set<Identifier> ids = structureIdsOrNull(server);
+        if (ids == null) {
             return 0;
         }
         int n = 0;
         for (String id : ModWorldgen.STRUCTURE_IDS) {
-            if (registry.getOptionalValue(DragonBrain.id(id)).isPresent()) {
+            if (ids.contains(DragonBrain.id(id))) {
                 n++;
             }
         }
@@ -127,12 +130,12 @@ public final class AssetDiagnostics {
                 id -> Registries.SOUND_EVENT.containsId(DragonBrain.id(id)));
         present += check(missing, "particle_type", AssetManifest.PARTICLE_IDS,
                 id -> Registries.PARTICLE_TYPE.containsId(DragonBrain.id(id)));
-        Registry<Biome> biomes = biomeRegistryOrNull(server);
+        java.util.Set<Identifier> biomeIds = biomeIdsOrNull(server);
         present += check(missing, "biome", ModWorldgen.BIOME_IDS.toArray(String[]::new),
-                id -> biomes != null && biomes.getOptionalValue(DragonBrain.id(id)).isPresent());
-        Registry<Structure> structures = structureRegistryOrNull(server);
+                id -> biomeIds != null && biomeIds.contains(DragonBrain.id(id)));
+        java.util.Set<Identifier> structureIds = structureIdsOrNull(server);
         present += check(missing, "structure", ModWorldgen.STRUCTURE_IDS.toArray(String[]::new),
-                id -> structures != null && structures.getOptionalValue(DragonBrain.id(id)).isPresent());
+                id -> structureIds != null && structureIds.contains(DragonBrain.id(id)));
         int total = AssetManifest.BLOCK_IDS.length * 2 + AssetManifest.ITEM_IDS.length
                 + AssetManifest.ENTITY_IDS.length + AssetManifest.SOUND_IDS.length
                 + AssetManifest.PARTICLE_IDS.length
