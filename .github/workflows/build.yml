@@ -36,8 +36,9 @@ jobs:
           RC=${PIPESTATUS[0]}
           if [ "$RC" != "0" ]; then
             echo "----- gradle failure digest -----"
-            grep -nE "error:|FAILURE|Exception|Caused by|What went wrong|error \[|\.java:" build.log | head -40 | while IFS= read -r line; do echo "::error::GRADLE $line"; done
-            tail -25 build.log | while IFS= read -r line; do echo "::error::TAIL $line"; done
+            grep -nE "error:|\.java:[0-9]+" build.log | head -12 | while IFS= read -r line; do echo "::error::GRADLE $line"; done
+            awk '/What went wrong/{f=1} f&&++n<=8' build.log | while IFS= read -r line; do echo "::error::CAUSE $line"; done
+            grep -nE "Could not (resolve|download|GET)|Read timed out|Connection (reset|timed out)|status code 5" build.log | head -4 | while IFS= read -r line; do echo "::error::NET $line"; done
           fi
           exit $RC
       - name: upload build log
