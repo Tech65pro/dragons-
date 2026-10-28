@@ -161,3 +161,30 @@ jobs:
           git add logs/client.log 2>/dev/null || true
           git commit -q -m "client log run ${{ github.run_id }}" || exit 0
           git push -f origin ci-logs-tmp:ci-logs
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    needs: [build, server-smoke, client-smoke]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: download built artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: DragonBrain-3.0
+          path: dist
+      - name: list artifacts
+        run: ls -lh dist/
+      - name: create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete v3.0.0 --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+          gh release create v3.0.0 dist/dragonbrain-3.0.0.jar dist/DragonBrain-AbyssalEnd-Vanilla.zip \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "DragonBrain 3.0.0 — End Visual Overhaul (pre-release)" \
+            --notes "DragonBrain 3.0 visual overhaul for Minecraft Java 1.21.11 + Fabric (Loader 0.20.1+, Fabric API 0.141.6+).
+
+          **Downloads:**
+          - \`dragonbrain-3.0.0.jar\` — the mod (put in \`mods/\`)
+          - \`DragonBrain-AbyssalEnd-Vanilla.zip\` — OPTIONAL vanilla-End texture refresh (put in \`resourcepacks/\`)
+
+          Verified in CI: compile, dedicated-server smoke test (10/10 RCON assertions), headless-client resource load (0 errors). Pre-release from PR #1 branch; see README/CREDITS in the repo. All artwork original or preserved DragonBrain 2.0 assets — no third-party pack files bundled (Beyonder/Fancy End are separate optional downloads from their authors)."
